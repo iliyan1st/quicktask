@@ -1114,13 +1114,13 @@ body {
 .location-bar { cursor: pointer; transition: opacity 0.2s; }
 .location-bar:hover { opacity: 0.9; }
 
-.sofia-map { width:100%; margin-bottom:12px; border-radius:var(--radius-sm); background:#f1f5f9; border:1px solid var(--border); }
-.sofia-map path.district-bg { fill:#eeeeee; stroke:#fff; stroke-width:1; }
-.sofia-map path.park { fill:#2b8028; stroke:#fff; stroke-width:0.5; opacity:0.7; pointer-events:none; }
+.sofia-map { width:100%; display:block; border-radius:var(--radius-sm); background:#eef2f7; }
+.sofia-map path.district-bg { fill:#e8e0d8; stroke:#fff; stroke-width:0.8; }
+.sofia-map path.park { fill:#4a9e47; stroke:#fff; stroke-width:0.3; opacity:0.6; pointer-events:none; }
 .sofia-map path.quarter { stroke:#fff; stroke-width:0.5; cursor:pointer; transition:opacity 0.15s, stroke-width 0.15s, filter 0.15s; opacity:0.85; }
-.sofia-map path.quarter:hover { opacity:1; stroke-width:1.5; stroke:#333; filter:brightness(1.1); z-index:1; }
-.sofia-map path.quarter.selected { opacity:1; stroke:var(--primary); stroke-width:2; filter:brightness(1.15); }
-.sofia-map-tooltip { position:absolute; background:rgba(0,0,0,0.8); color:#fff; padding:4px 10px; border-radius:6px; font-size:12px; pointer-events:none; z-index:10; white-space:nowrap; transform:translate(-50%,-100%); margin-top:-8px; }
+.sofia-map path.quarter:hover { opacity:1; stroke-width:1.5; stroke:#333; filter:brightness(1.15); }
+.sofia-map path.quarter.selected { opacity:1; stroke:var(--primary); stroke-width:2.5; filter:brightness(1.2); }
+.sofia-map-tooltip { position:absolute; background:rgba(30,41,59,0.92); color:#fff; padding:5px 12px; border-radius:8px; font-size:13px; font-weight:500; pointer-events:none; z-index:10; white-space:nowrap; transform:translate(-50%,-100%); margin-top:-10px; box-shadow:0 2px 8px rgba(0,0,0,0.2); }
 
 .home-map-section {
   margin: 0 16px 12px;
@@ -1138,7 +1138,9 @@ body {
   align-items: center;
   gap: 6px;
 }
-.home-map-section .sofia-map { max-height: 240px; margin-bottom: 10px; background: #f1f5f9; border: 1px solid var(--border); }
+#home-map-container { margin-bottom: 10px; border-radius: var(--radius-sm); overflow: hidden; background: #eef2f7; }
+#modal-map-container { margin-bottom: 12px; border-radius: var(--radius-sm); overflow: hidden; background: #eef2f7; max-height: 250px; }
+#modal-map-container .sofia-map { max-height: 250px; }
 .home-map-section .district-select {
   width: 100%;
   padding: 10px 14px;
@@ -3931,8 +3933,10 @@ async function loadSofiaMap() {
       el.innerHTML = svgMapCache;
       const svg = el.querySelector('svg');
       if (svg) {
-        svg.style.width = '100%';
-        svg.style.borderRadius = 'var(--radius-sm)';
+        svg.setAttribute('class', 'sofia-map');
+        svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+        svg.removeAttribute('width');
+        svg.removeAttribute('height');
         colorMapQuarters(svg);
         attachMapEvents(svg, id === 'home-map-container' ? 'home' : 'modal');
       }

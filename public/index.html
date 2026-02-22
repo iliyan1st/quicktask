@@ -1114,10 +1114,13 @@ body {
 .location-bar { cursor: pointer; transition: opacity 0.2s; }
 .location-bar:hover { opacity: 0.9; }
 
-.sofia-map { width:100%; max-height:200px; margin-bottom:12px; border-radius:var(--radius-sm); background:#f8fafc; }
-.sofia-map path { cursor:pointer; stroke:#fff; stroke-width:1; transition:opacity 0.2s, stroke-width 0.2s; }
-.sofia-map path:hover { opacity:1 !important; stroke-width:2; }
-.sofia-map path.selected { opacity:1 !important; stroke:var(--primary); stroke-width:2; }
+.sofia-map { width:100%; margin-bottom:12px; border-radius:var(--radius-sm); background:#f1f5f9; border:1px solid var(--border); }
+.sofia-map path.district-bg { fill:#eeeeee; stroke:#fff; stroke-width:1; }
+.sofia-map path.park { fill:#2b8028; stroke:#fff; stroke-width:0.5; opacity:0.7; pointer-events:none; }
+.sofia-map path.quarter { stroke:#fff; stroke-width:0.5; cursor:pointer; transition:opacity 0.15s, stroke-width 0.15s, filter 0.15s; opacity:0.85; }
+.sofia-map path.quarter:hover { opacity:1; stroke-width:1.5; stroke:#333; filter:brightness(1.1); z-index:1; }
+.sofia-map path.quarter.selected { opacity:1; stroke:var(--primary); stroke-width:2; filter:brightness(1.15); }
+.sofia-map-tooltip { position:absolute; background:rgba(0,0,0,0.8); color:#fff; padding:4px 10px; border-radius:6px; font-size:12px; pointer-events:none; z-index:10; white-space:nowrap; transform:translate(-50%,-100%); margin-top:-8px; }
 
 .home-map-section {
   margin: 0 16px 12px;
@@ -2628,32 +2631,7 @@ body {
 
       <div class="home-map-section" id="home-map-section">
         <h4>📍 Търси по район</h4>
-        <svg class="sofia-map" id="home-sofia-map" viewBox="0 0 500 400" xmlns="http://www.w3.org/2000/svg">
-          <path data-district="Нови Искър" d="M180,10 L220,8 L260,15 L270,50 L240,70 L200,65 L175,45 Z" fill="#65a30d" opacity="0.7" onclick="toggleDistrictHome('Нови Искър')"><title>Нови Искър</title></path>
-          <path data-district="Кремиковци" d="M310,15 L370,20 L400,55 L390,100 L350,95 L310,70 L300,45 Z" fill="#ca8a04" opacity="0.7" onclick="toggleDistrictHome('Кремиковци')"><title>Кремиковци</title></path>
-          <path data-district="Банкя" d="M10,150 L55,130 L80,155 L75,195 L45,200 L15,185 Z" fill="#9333ea" opacity="0.7" onclick="toggleDistrictHome('Банкя')"><title>Банкя</title></path>
-          <path data-district="Панчарево" d="M340,300 L395,280 L430,310 L425,360 L380,380 L345,355 Z" fill="#be185d" opacity="0.7" onclick="toggleDistrictHome('Панчарево')"><title>Панчарево</title></path>
-          <path data-district="Връбница" d="M105,70 L160,60 L185,55 L200,65 L195,105 L155,115 L110,105 Z" fill="#0891b2" opacity="0.7" onclick="toggleDistrictHome('Връбница')"><title>Връбница</title></path>
-          <path data-district="Надежда" d="M200,65 L240,70 L270,75 L275,115 L245,130 L210,125 L195,105 Z" fill="#f43f5e" opacity="0.7" onclick="toggleDistrictHome('Надежда')"><title>Надежда</title></path>
-          <path data-district="Красна поляна" d="M90,115 L155,115 L170,155 L150,185 L105,180 L80,155 Z" fill="#0ea5e9" opacity="0.7" onclick="toggleDistrictHome('Красна поляна')"><title>Красна поляна</title></path>
-          <path data-district="Люлин" d="M75,195 L105,180 L150,185 L160,220 L140,255 L95,250 L70,225 Z" fill="#7c3aed" opacity="0.7" onclick="toggleDistrictHome('Люлин')"><title>Люлин</title></path>
-          <path data-district="Овча купел" d="M95,250 L140,255 L155,290 L140,325 L100,320 L80,290 Z" fill="#dc2626" opacity="0.7" onclick="toggleDistrictHome('Овча купел')"><title>Овча купел</title></path>
-          <path data-district="Витоша" d="M140,325 L155,290 L195,285 L240,300 L260,345 L230,380 L170,375 Z" fill="#059669" opacity="0.7" onclick="toggleDistrictHome('Витоша')"><title>Витоша</title></path>
-          <path data-district="Искър" d="M320,130 L370,125 L390,160 L375,200 L335,195 L315,165 Z" fill="#10b981" opacity="0.7" onclick="toggleDistrictHome('Искър')"><title>Искър</title></path>
-          <path data-district="Младост" d="M315,200 L375,200 L385,240 L370,275 L325,270 L305,240 Z" fill="#6366f1" opacity="0.7" onclick="toggleDistrictHome('Младост')"><title>Младост</title></path>
-          <path data-district="Студентски" d="M305,240 L325,270 L340,300 L310,315 L275,300 L270,265 Z" fill="#d946ef" opacity="0.7" onclick="toggleDistrictHome('Студентски')"><title>Студентски</title></path>
-          <path data-district="Сердика" d="M210,125 L245,130 L260,150 L250,175 L225,180 L205,165 L195,145 Z" fill="#f59e0b" opacity="0.7" onclick="toggleDistrictHome('Сердика')"><title>Сердика</title></path>
-          <path data-district="Подуяне" d="M260,115 L310,120 L320,155 L300,180 L270,175 L260,150 Z" fill="#ec4899" opacity="0.7" onclick="toggleDistrictHome('Подуяне')"><title>Подуяне</title></path>
-          <path data-district="Илинден" d="M150,185 L180,175 L205,165 L195,200 L175,215 L160,220 Z" fill="#a855f7" opacity="0.7" onclick="toggleDistrictHome('Илинден')"><title>Илинден</title></path>
-          <path data-district="Слатина" d="M300,180 L335,195 L315,225 L285,220 L270,200 Z" fill="#06b6d4" opacity="0.7" onclick="toggleDistrictHome('Слатина')"><title>Слатина</title></path>
-          <path data-district="Изгрев" d="M270,200 L285,220 L305,240 L270,255 L250,235 L255,215 Z" fill="#84cc16" opacity="0.7" onclick="toggleDistrictHome('Изгрев')"><title>Изгрев</title></path>
-          <path data-district="Лозенец" d="M230,230 L255,215 L250,255 L240,275 L215,270 L210,245 Z" fill="#22c55e" opacity="0.7" onclick="toggleDistrictHome('Лозенец')"><title>Лозенец</title></path>
-          <path data-district="Красно село" d="M165,225 L195,215 L210,245 L200,275 L175,280 L155,260 Z" fill="#3b82f6" opacity="0.7" onclick="toggleDistrictHome('Красно село')"><title>Красно село</title></path>
-          <path data-district="Възраждане" d="M195,180 L215,180 L220,200 L210,215 L195,215 L185,200 Z" fill="#8b5cf6" opacity="0.7" onclick="toggleDistrictHome('Възраждане')"><title>Възраждане</title></path>
-          <path data-district="Средец" d="M220,185 L245,185 L250,205 L240,220 L225,218 L220,200 Z" fill="#ef4444" opacity="0.7" onclick="toggleDistrictHome('Средец')"><title>Средец</title></path>
-          <path data-district="Оборище" d="M245,170 L270,175 L270,200 L255,210 L245,200 L245,185 Z" fill="#f97316" opacity="0.7" onclick="toggleDistrictHome('Оборище')"><title>Оборище</title></path>
-          <path data-district="Триадица" d="M210,215 L230,218 L235,240 L215,255 L200,245 L195,225 Z" fill="#14b8a6" opacity="0.7" onclick="toggleDistrictHome('Триадица')"><title>Триадица</title></path>
-        </svg>
+        <div id="home-map-container" style="position:relative"></div>
         <select class="district-select" id="home-district-select" onchange="selectDistrictFromDropdown(this.value)">
           <option value="">Всички райони — изберете район</option>
         </select>
@@ -2925,36 +2903,7 @@ body {
     <div class="modal neighborhood-modal">
       <button class="modal-close" onclick="closeNeighborhoodPicker()">&times;</button>
       <h3>Избери квартал</h3>
-      <svg class="sofia-map" viewBox="0 0 500 400" xmlns="http://www.w3.org/2000/svg">
-        <!-- Far outer ring -->
-        <path data-district="Нови Искър" d="M180,10 L220,8 L260,15 L270,50 L240,70 L200,65 L175,45 Z" fill="#65a30d" opacity="0.7" onclick="toggleDistrictOnMap('Нови Искър')"><title>Нови Искър</title></path>
-        <path data-district="Кремиковци" d="M310,15 L370,20 L400,55 L390,100 L350,95 L310,70 L300,45 Z" fill="#ca8a04" opacity="0.7" onclick="toggleDistrictOnMap('Кремиковци')"><title>Кремиковци</title></path>
-        <path data-district="Банкя" d="M10,150 L55,130 L80,155 L75,195 L45,200 L15,185 Z" fill="#9333ea" opacity="0.7" onclick="toggleDistrictOnMap('Банкя')"><title>Банкя</title></path>
-        <path data-district="Панчарево" d="M340,300 L395,280 L430,310 L425,360 L380,380 L345,355 Z" fill="#be185d" opacity="0.7" onclick="toggleDistrictOnMap('Панчарево')"><title>Панчарево</title></path>
-        <!-- Outer ring -->
-        <path data-district="Връбница" d="M105,70 L160,60 L185,55 L200,65 L195,105 L155,115 L110,105 Z" fill="#0891b2" opacity="0.7" onclick="toggleDistrictOnMap('Връбница')"><title>Връбница</title></path>
-        <path data-district="Надежда" d="M200,65 L240,70 L270,75 L275,115 L245,130 L210,125 L195,105 Z" fill="#f43f5e" opacity="0.7" onclick="toggleDistrictOnMap('Надежда')"><title>Надежда</title></path>
-        <path data-district="Красна поляна" d="M90,115 L155,115 L170,155 L150,185 L105,180 L80,155 Z" fill="#0ea5e9" opacity="0.7" onclick="toggleDistrictOnMap('Красна поляна')"><title>Красна поляна</title></path>
-        <path data-district="Люлин" d="M75,195 L105,180 L150,185 L160,220 L140,255 L95,250 L70,225 Z" fill="#7c3aed" opacity="0.7" onclick="toggleDistrictOnMap('Люлин')"><title>Люлин</title></path>
-        <path data-district="Овча купел" d="M95,250 L140,255 L155,290 L140,325 L100,320 L80,290 Z" fill="#dc2626" opacity="0.7" onclick="toggleDistrictOnMap('Овча купел')"><title>Овча купел</title></path>
-        <path data-district="Витоша" d="M140,325 L155,290 L195,285 L240,300 L260,345 L230,380 L170,375 Z" fill="#059669" opacity="0.7" onclick="toggleDistrictOnMap('Витоша')"><title>Витоша</title></path>
-        <path data-district="Искър" d="M320,130 L370,125 L390,160 L375,200 L335,195 L315,165 Z" fill="#10b981" opacity="0.7" onclick="toggleDistrictOnMap('Искър')"><title>Искър</title></path>
-        <path data-district="Младост" d="M315,200 L375,200 L385,240 L370,275 L325,270 L305,240 Z" fill="#6366f1" opacity="0.7" onclick="toggleDistrictOnMap('Младост')"><title>Младост</title></path>
-        <path data-district="Студентски" d="M305,240 L325,270 L340,300 L310,315 L275,300 L270,265 Z" fill="#d946ef" opacity="0.7" onclick="toggleDistrictOnMap('Студентски')"><title>Студентски</title></path>
-        <!-- Inner ring -->
-        <path data-district="Сердика" d="M210,125 L245,130 L260,150 L250,175 L225,180 L205,165 L195,145 Z" fill="#f59e0b" opacity="0.7" onclick="toggleDistrictOnMap('Сердика')"><title>Сердика</title></path>
-        <path data-district="Подуяне" d="M260,115 L310,120 L320,155 L300,180 L270,175 L260,150 Z" fill="#ec4899" opacity="0.7" onclick="toggleDistrictOnMap('Подуяне')"><title>Подуяне</title></path>
-        <path data-district="Илинден" d="M150,185 L180,175 L205,165 L195,200 L175,215 L160,220 Z" fill="#a855f7" opacity="0.7" onclick="toggleDistrictOnMap('Илинден')"><title>Илинден</title></path>
-        <path data-district="Слатина" d="M300,180 L335,195 L315,225 L285,220 L270,200 Z" fill="#06b6d4" opacity="0.7" onclick="toggleDistrictOnMap('Слатина')"><title>Слатина</title></path>
-        <path data-district="Изгрев" d="M270,200 L285,220 L305,240 L270,255 L250,235 L255,215 Z" fill="#84cc16" opacity="0.7" onclick="toggleDistrictOnMap('Изгрев')"><title>Изгрев</title></path>
-        <path data-district="Лозенец" d="M230,230 L255,215 L250,255 L240,275 L215,270 L210,245 Z" fill="#22c55e" opacity="0.7" onclick="toggleDistrictOnMap('Лозенец')"><title>Лозенец</title></path>
-        <path data-district="Красно село" d="M165,225 L195,215 L210,245 L200,275 L175,280 L155,260 Z" fill="#3b82f6" opacity="0.7" onclick="toggleDistrictOnMap('Красно село')"><title>Красно село</title></path>
-        <!-- Center districts -->
-        <path data-district="Възраждане" d="M195,180 L215,180 L220,200 L210,215 L195,215 L185,200 Z" fill="#8b5cf6" opacity="0.7" onclick="toggleDistrictOnMap('Възраждане')"><title>Възраждане</title></path>
-        <path data-district="Средец" d="M220,185 L245,185 L250,205 L240,220 L225,218 L220,200 Z" fill="#ef4444" opacity="0.7" onclick="toggleDistrictOnMap('Средец')"><title>Средец</title></path>
-        <path data-district="Оборище" d="M245,170 L270,175 L270,200 L255,210 L245,200 L245,185 Z" fill="#f97316" opacity="0.7" onclick="toggleDistrictOnMap('Оборище')"><title>Оборище</title></path>
-        <path data-district="Триадица" d="M210,215 L230,218 L235,240 L215,255 L200,245 L195,225 Z" fill="#14b8a6" opacity="0.7" onclick="toggleDistrictOnMap('Триадица')"><title>Триадица</title></path>
-      </svg>
+      <div id="modal-map-container" style="position:relative"></div>
       <div class="neighborhood-search">
         <span class="search-icon">🔍</span>
         <input type="text" id="neighborhood-search-input" placeholder="Търси квартал...">
@@ -3084,13 +3033,22 @@ function showAuthError(msg) {
 async function handleLogin() {
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
-  if(!email || !password) return showAuthError('Please fill in all fields');
-  document.getElementById('btn-login').disabled = true;
-  document.getElementById('btn-login').textContent = 'Signing in...';
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-  document.getElementById('btn-login').disabled = false;
-  document.getElementById('btn-login').textContent = 'Sign In';
-  if(error) return showAuthError(error.message);
+  if(!email || !password) return showAuthError('Моля попълнете всички полета');
+  const btn = document.getElementById('btn-login');
+  btn.disabled = true;
+  btn.textContent = 'Влизане...';
+  try {
+    const { error } = await Promise.race([
+      sb.auth.signInWithPassword({ email, password }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Времето за връзка изтече. Опитайте отново.')), 10000))
+    ]);
+    if(error) showAuthError(error.message);
+  } catch(e) {
+    showAuthError(e.message || 'Грешка при вход');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Вход';
+  }
 }
 
 async function handleSignup() {
@@ -3098,19 +3056,25 @@ async function handleSignup() {
   const username = document.getElementById('signup-username').value.trim();
   const email = document.getElementById('signup-email').value.trim();
   const password = document.getElementById('signup-password').value;
-  if(!name || !username || !email || !password) return showAuthError('Please fill in all fields');
-  if(password.length < 6) return showAuthError('Password must be at least 6 characters');
-  document.getElementById('btn-signup').disabled = true;
-  document.getElementById('btn-signup').textContent = 'Creating account...';
-  const { error } = await sb.auth.signUp({
-    email, password,
-    options: { data: { full_name: name, username: username } }
-  });
-  document.getElementById('btn-signup').disabled = false;
-  document.getElementById('btn-signup').textContent = 'Create Account';
-  if(error) return showAuthError(error.message);
-  showAuthError('');
-  showToast('Account created! Check your email to verify.');
+  if(!name || !username || !email || !password) return showAuthError('Моля попълнете всички полета');
+  if(password.length < 6) return showAuthError('Паролата трябва да е поне 6 символа');
+  const btn = document.getElementById('btn-signup');
+  btn.disabled = true;
+  btn.textContent = 'Създаване...';
+  try {
+    const { error } = await Promise.race([
+      sb.auth.signUp({ email, password, options: { data: { full_name: name, username: username } } }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Времето за връзка изтече. Опитайте отново.')), 10000))
+    ]);
+    if(error) { showAuthError(error.message); return; }
+    showAuthError('');
+    showToast('Акаунтът е създаден! Проверете имейла си.');
+  } catch(e) {
+    showAuthError(e.message || 'Грешка при регистрация');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Създай акаунт';
+  }
 }
 
 async function handleGoogleAuth() {
@@ -3945,34 +3909,107 @@ function toggleQuarter(checkbox) {
   updateMapSelection();
 }
 
-function toggleDistrictOnMap(districtName) {
-  const data = SOFIA_DISTRICTS[districtName];
-  if (!data) return;
-  const allSelected = data.quarters.every(q => tempSelectedNeighborhoods.includes(q));
-  if (allSelected) {
-    tempSelectedNeighborhoods = tempSelectedNeighborhoods.filter(n => !data.quarters.includes(n));
-  } else {
-    data.quarters.forEach(q => {
-      if (!tempSelectedNeighborhoods.includes(q)) tempSelectedNeighborhoods.push(q);
-    });
+// Build a lookup: quarter name → district name
+const QUARTER_TO_DISTRICT = {};
+Object.entries(SOFIA_DISTRICTS).forEach(([district, data]) => {
+  data.quarters.forEach(q => { QUARTER_TO_DISTRICT[q] = district; });
+});
+
+// Load the real Sofia SVG map into containers
+let svgMapCache = null;
+async function loadSofiaMap() {
+  if (!svgMapCache) {
+    try {
+      const resp = await fetch('/sofia-map.svg');
+      svgMapCache = await resp.text();
+    } catch(e) { console.error('Failed to load Sofia map:', e); return; }
   }
-  buildNeighborhoodList(document.getElementById('neighborhood-search-input').value);
-  updateMapSelection();
-  // Expand that district group in the list
-  const groups = document.querySelectorAll('.district-group');
-  groups.forEach(g => {
-    const name = g.querySelector('.district-name');
-    if (name && name.textContent === districtName) g.classList.add('expanded');
+  // Insert into both containers
+  ['home-map-container', 'modal-map-container'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !el.querySelector('svg')) {
+      el.innerHTML = svgMapCache;
+      const svg = el.querySelector('svg');
+      if (svg) {
+        svg.style.width = '100%';
+        svg.style.borderRadius = 'var(--radius-sm)';
+        colorMapQuarters(svg);
+        attachMapEvents(svg, id === 'home-map-container' ? 'home' : 'modal');
+      }
+    }
   });
 }
 
+function colorMapQuarters(svg) {
+  svg.querySelectorAll('path.quarter').forEach(path => {
+    const name = path.getAttribute('data-name');
+    const district = QUARTER_TO_DISTRICT[name];
+    if (district && SOFIA_DISTRICTS[district]) {
+      path.style.fill = SOFIA_DISTRICTS[district].color;
+    } else {
+      path.style.fill = '#dac1a7';
+    }
+  });
+}
+
+function attachMapEvents(svg, mode) {
+  // Tooltip on hover
+  const tooltip = document.createElement('div');
+  tooltip.className = 'sofia-map-tooltip';
+  tooltip.style.display = 'none';
+  svg.parentElement.appendChild(tooltip);
+
+  svg.querySelectorAll('path.quarter').forEach(path => {
+    path.addEventListener('mouseenter', function(e) {
+      const name = this.getAttribute('data-name');
+      const district = QUARTER_TO_DISTRICT[name];
+      tooltip.textContent = name + (district ? ' (' + district + ')' : '');
+      tooltip.style.display = 'block';
+    });
+    path.addEventListener('mousemove', function(e) {
+      const rect = svg.parentElement.getBoundingClientRect();
+      tooltip.style.left = (e.clientX - rect.left) + 'px';
+      tooltip.style.top = (e.clientY - rect.top - 10) + 'px';
+    });
+    path.addEventListener('mouseleave', function() {
+      tooltip.style.display = 'none';
+    });
+    path.addEventListener('click', function() {
+      const name = this.getAttribute('data-name');
+      if (mode === 'home') {
+        toggleQuarterHome(name);
+      } else {
+        toggleQuarterOnModalMap(name);
+      }
+    });
+  });
+}
+
+function toggleQuarterHome(quarterName) {
+  if (selectedNeighborhoods.includes(quarterName)) {
+    selectedNeighborhoods = selectedNeighborhoods.filter(n => n !== quarterName);
+  } else {
+    selectedNeighborhoods.push(quarterName);
+  }
+  updateHomeMapUI();
+  updateLocationBarText();
+  renderTaskCards();
+}
+
+function toggleQuarterOnModalMap(quarterName) {
+  if (tempSelectedNeighborhoods.includes(quarterName)) {
+    tempSelectedNeighborhoods = tempSelectedNeighborhoods.filter(n => n !== quarterName);
+  } else {
+    tempSelectedNeighborhoods.push(quarterName);
+  }
+  buildNeighborhoodList(document.getElementById('neighborhood-search-input').value);
+  updateMapSelection();
+}
+
 function updateMapSelection() {
-  document.querySelectorAll('.sofia-map path[data-district]').forEach(path => {
-    const district = path.getAttribute('data-district');
-    const data = SOFIA_DISTRICTS[district];
-    if (!data) return;
-    const anySelected = data.quarters.some(q => tempSelectedNeighborhoods.includes(q));
-    path.classList.toggle('selected', anySelected);
+  document.querySelectorAll('#modal-map-container path.quarter').forEach(path => {
+    const name = path.getAttribute('data-name');
+    path.classList.toggle('selected', tempSelectedNeighborhoods.includes(name));
   });
 }
 
@@ -4082,12 +4119,9 @@ function removeDistrictFromHome(districtName) {
 
 function updateHomeMapUI() {
   // Update home map path highlights
-  document.querySelectorAll('#home-sofia-map path[data-district]').forEach(path => {
-    const district = path.getAttribute('data-district');
-    const data = SOFIA_DISTRICTS[district];
-    if (!data) return;
-    const anySelected = data.quarters.some(q => selectedNeighborhoods.includes(q));
-    path.classList.toggle('selected', anySelected);
+  document.querySelectorAll('#home-map-container path.quarter').forEach(path => {
+    const name = path.getAttribute('data-name');
+    path.classList.toggle('selected', selectedNeighborhoods.includes(name));
   });
   // Update tags
   const tagsEl = document.getElementById('home-selected-tags');
@@ -4161,6 +4195,7 @@ function showToast(msg) {
 async function initApp() {
   populateNeighborhoodSelect();
   populateHomeDistrictSelect();
+  loadSofiaMap();
   renderTaskCards();
 }
 

@@ -1,0 +1,4182 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>QuickTask - Свърши нещата</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --primary: #1a365d;
+  --primary-light: #2a4a7f;
+  --primary-dark: #0f2440;
+  --accent: #0d9488;
+  --accent-light: #14b8a6;
+  --accent-pale: #ccfbf1;
+  --bg: #f1f5f9;
+  --bg-warm: #f8fafc;
+  --card: #ffffff;
+  --text: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --border: #e2e8f0;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --held: #fbbf24;
+  --released: #34d399;
+  --received: #60a5fa;
+  --shadow-sm: 0 1px 3px rgba(15,36,64,0.06);
+  --shadow-md: 0 4px 12px rgba(15,36,64,0.08);
+  --shadow-lg: 0 8px 30px rgba(15,36,64,0.12);
+  --shadow-xl: 0 20px 50px rgba(15,36,64,0.15);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 50%;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+.app-frame {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100vh;
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+  display: none;
+}
+
+.app-frame.app-visible {
+  display: block;
+}
+
+/* Header */
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 100;
+  background: var(--primary);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+}
+
+.app-header .logo {
+  font-family: 'Fraunces', serif;
+  color: white;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.app-header .logo span { color: var(--accent-light); }
+
+.header-right { display: flex; align-items: center; gap: 12px; }
+
+.notif-btn {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--primary-light);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 18px;
+  transition: background 0.2s;
+}
+
+.notif-btn:hover { background: var(--primary-dark); }
+
+.notif-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  background: var(--danger);
+  border-radius: var(--radius-full);
+  border: 2px solid var(--primary);
+}
+
+.profile-avatar-sm {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 2px solid rgba(255,255,255,0.3);
+}
+
+/* Main content */
+.app-content {
+  padding-top: 56px;
+  padding-bottom: 72px;
+  min-height: 100vh;
+}
+
+/* Views */
+.view { display: none; animation: fadeIn 0.25s ease; }
+.view.active { display: block; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Bottom Nav */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  background: white;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  height: 68px;
+  padding-bottom: 4px;
+  z-index: 100;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  padding: 6px 12px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  transition: color 0.2s;
+  position: relative;
+}
+
+.nav-item.active { color: var(--accent); }
+.nav-item .nav-icon { font-size: 22px; }
+
+.nav-item.create-btn .nav-icon {
+  width: 44px;
+  height: 44px;
+  background: var(--accent);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 24px;
+  margin-top: -20px;
+  box-shadow: 0 4px 15px rgba(13,148,136,0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.nav-item.create-btn:hover .nav-icon {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(13,148,136,0.5);
+}
+
+.nav-item.create-btn span:last-child { margin-top: -2px; }
+
+.msg-badge {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  background: var(--danger);
+  border-radius: 10px;
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+/* ===== AD BANNER ===== */
+.ad-banner {
+  margin: 8px 16px;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  border: 1px dashed var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.ad-banner:hover { box-shadow: var(--shadow-sm); }
+.ad-banner { grid-column: 1 / -1; }
+
+.ad-banner .ad-tag {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.ad-banner .ad-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.ad-banner .ad-content h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.ad-banner .ad-content p {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+/* ===== TRUST BADGES ===== */
+.trust-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.trust-badge.verified { color: var(--accent); background: var(--accent-pale); }
+.trust-badge.trusted { color: #7c3aed; background: #ede9fe; }
+.trust-badge.premium { color: #b45309; background: #fef3c7; }
+.trust-badge.new-user { color: var(--text-muted); background: #f1f5f9; }
+
+.trust-level {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.trust-level .level-bar {
+  display: flex;
+  gap: 2px;
+}
+
+.trust-level .level-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--border);
+}
+
+.trust-level .level-dot.filled { background: var(--accent); }
+.trust-level .level-dot.gold { background: var(--warning); }
+
+.trust-level .level-text {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ===== PAYMENT MODE TOGGLE ===== */
+.payment-mode-bar {
+  margin: 0 16px 12px;
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 4px;
+  display: flex;
+  gap: 4px;
+  border: 1px solid var(--border);
+}
+
+.payment-mode-btn {
+  flex: 1;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-secondary);
+  background: transparent;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.payment-mode-btn.active {
+  background: var(--primary);
+  color: white;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ===== HOME VIEW ===== */
+.search-section {
+  padding: 16px;
+  background: var(--primary);
+  padding-top: 8px;
+  padding-bottom: 20px;
+  position: relative;
+}
+
+.search-section::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: var(--primary);
+  border-radius: 0 0 24px 24px;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 10px 14px;
+  gap: 10px;
+  box-shadow: var(--shadow-md);
+}
+
+.search-bar svg { color: var(--text-muted); flex-shrink: 0; }
+
+.search-bar input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  background: transparent;
+}
+
+.search-bar input::placeholder { color: var(--text-muted); }
+
+.search-filters {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.filter-select {
+  padding: 7px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+  background: white;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.filter-select:focus { border-color: var(--accent); }
+
+.location-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255,255,255,0.8);
+  font-size: 12px;
+  margin-bottom: 10px;
+  padding-left: 2px;
+}
+
+.location-bar svg { width: 14px; height: 14px; }
+
+.categories-scroll {
+  padding: 20px 16px 8px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.categories-scroll::-webkit-scrollbar { display: none; }
+
+.cat-chip {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: white;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+  white-space: nowrap;
+}
+
+.cat-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+.cat-chip:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+
+.sort-bar {
+  padding: 4px 16px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sort-bar span { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+
+.sort-select {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12.5px;
+  color: var(--accent);
+  border: none;
+  background: transparent;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+
+/* Task Cards */
+.tasks-grid {
+  padding: 0 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.task-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid var(--border);
+}
+
+.task-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+.task-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.task-cat-tag {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  background: var(--accent-pale);
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.task-price-wrap {
+  text-align: right;
+}
+
+.task-price {
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.task-payment-type {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.task-card h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.task-card .desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 10px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.task-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.task-poster { display: flex; align-items: center; gap: 8px; }
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.avatar .premium-ring {
+  position: absolute;
+  inset: -2px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--warning);
+}
+
+.poster-info .name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.poster-info .rating { font-size: 11px; color: var(--warning); }
+
+.task-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.task-meta .meta-item { display: flex; align-items: center; gap: 3px; }
+
+.bidding-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.bidding-badge.price-bid { background: #fef3c7; color: #92400e; }
+.bidding-badge.fixed-price { background: #dbeafe; color: #1e40af; }
+.bidding-badge.cash-badge { background: #d1fae5; color: #065f46; }
+.bidding-badge.escrow-badge { background: #ede9fe; color: #5b21b6; }
+
+/* ===== TASK DETAIL VIEW ===== */
+.detail-header {
+  padding: 16px;
+  background: white;
+  border-bottom: 1px solid var(--border);
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: 'DM Sans', sans-serif;
+  margin-bottom: 12px;
+  padding: 4px 0;
+}
+
+.detail-cat-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-pale);
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-header h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.detail-price-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.detail-price {
+  font-family: 'Fraunces', serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.detail-body { padding: 16px; }
+
+.detail-desc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.detail-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.info-card {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 12px;
+  border: 1px solid var(--border);
+}
+
+.info-card .label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.info-card .value { font-size: 14px; font-weight: 600; color: var(--text); }
+
+.detail-poster-card {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 14px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.detail-poster-card .avatar { width: 40px; height: 40px; font-size: 15px; }
+
+.detail-poster-card .info h4 {
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.detail-poster-card .info .rating { font-size: 12px; color: var(--warning); }
+.detail-poster-card .info .tasks-done { font-size: 11px; color: var(--text-muted); }
+
+/* Payment info box in detail */
+.payment-info-box {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.payment-info-box .pay-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.payment-info-box .pay-icon.cash-icon { background: #d1fae5; }
+.payment-info-box .pay-icon.escrow-icon { background: #ede9fe; }
+
+.payment-info-box .pay-details h5 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.payment-info-box .pay-details p {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+/* Bids section */
+.bids-section { padding: 0 16px 16px; }
+
+.bids-section h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+
+.bid-card {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 12px;
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.bid-card .avatar { width: 36px; height: 36px; font-size: 13px; margin-top: 2px; }
+.bid-info { flex: 1; }
+
+.bid-info .bid-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.bid-info .name { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+
+.bid-info .bid-price {
+  font-family: 'Fraunces', serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.bid-info .rating { font-size: 11px; color: var(--warning); margin-bottom: 4px; }
+
+.bid-info .bid-msg {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.select-bid-btn {
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: white;
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: background 0.2s;
+}
+
+.select-bid-btn:hover { background: var(--accent-light); }
+
+.place-bid-sticky {
+  position: fixed;
+  bottom: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 600px;
+  z-index: 50;
+}
+
+.place-bid-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--radius-lg);
+  background: var(--accent);
+  color: white;
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(13,148,136,0.4);
+  transition: transform 0.2s;
+}
+
+.place-bid-btn:hover { transform: scale(1.02); }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,36,64,0.5);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.modal-overlay.active { display: flex; }
+
+/* Auth modal overlay (on-demand, not full-page gate) */
+.auth-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,36,64,0.55);
+  backdrop-filter: blur(6px);
+  z-index: 400;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.auth-modal-overlay.active { display: flex; }
+
+.auth-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: rgba(0,0,0,0.06);
+  color: var(--text-muted);
+  border-radius: 50%;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+.auth-modal-close:hover { background: rgba(0,0,0,0.12); }
+
+/* Header buttons: logged-out state */
+.header-auth-btns { display: flex; gap: 8px; align-items: center; }
+.btn-header-login {
+  padding: 6px 14px;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-header-login:hover { border-color: var(--accent); color: var(--accent); }
+.btn-header-signup {
+  padding: 6px 14px;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-header-signup:hover { background: var(--accent-light); }
+
+.modal {
+  width: 100%;
+  max-width: 100%;
+  background: white;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: 24px 20px 32px;
+  animation: slideUp 0.3s ease;
+}
+
+.modal h3 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--text);
+}
+
+.modal-close {
+  float: right;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 4px;
+}
+
+/* Form elements */
+.form-group { margin-bottom: 16px; }
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  background: white;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+.form-textarea { resize: vertical; min-height: 80px; }
+.form-select option { background: white; color: var(--text); }
+
+.btn-primary {
+  width: 100%;
+  padding: 13px;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: white;
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.btn-primary:hover { background: var(--accent-light); transform: scale(1.01); }
+
+.btn-secondary {
+  width: 100%;
+  padding: 13px;
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--primary);
+  border: 1.5px solid var(--border);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.btn-secondary:hover { border-color: var(--primary); }
+
+/* Toggle */
+.toggle-group {
+  display: flex;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  gap: 3px;
+}
+
+.toggle-opt {
+  flex: 1;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 6px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-secondary);
+  background: transparent;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.toggle-opt.active {
+  background: white;
+  color: var(--primary);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ===== CREATE TASK VIEW ===== */
+.create-view { padding: 16px; }
+
+.create-view h2 {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--text);
+}
+
+.photo-upload {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.2s;
+  margin-bottom: 16px;
+}
+
+.photo-upload:hover { border-color: var(--accent); }
+.photo-upload .icon { font-size: 28px; margin-bottom: 6px; }
+.photo-upload p { font-size: 13px; }
+
+.location-input { display: flex; gap: 8px; }
+.location-input .form-input { flex: 1; }
+
+.loc-btn {
+  padding: 11px 14px;
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--accent-pale);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: 'DM Sans', sans-serif;
+  transition: background 0.2s;
+}
+
+.loc-btn:hover { background: var(--accent); color: white; }
+
+/* ===== NEIGHBORHOOD PICKER ===== */
+.location-bar { cursor: pointer; transition: opacity 0.2s; }
+.location-bar:hover { opacity: 0.9; }
+
+.sofia-map { width:100%; max-height:200px; margin-bottom:12px; border-radius:var(--radius-sm); background:#f8fafc; }
+.sofia-map path { cursor:pointer; stroke:#fff; stroke-width:1; transition:opacity 0.2s, stroke-width 0.2s; }
+.sofia-map path:hover { opacity:1 !important; stroke-width:2; }
+.sofia-map path.selected { opacity:1 !important; stroke:var(--primary); stroke-width:2; }
+
+.home-map-section {
+  margin: 0 16px 12px;
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+.home-map-section h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.home-map-section .sofia-map { max-height: 240px; margin-bottom: 10px; background: #f1f5f9; border: 1px solid var(--border); }
+.home-map-section .district-select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+  background: white;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.home-map-section .district-select:focus { border-color: var(--accent); }
+.home-map-selected-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.home-map-selected-tags:empty { display: none; }
+.district-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+}
+.district-tag .tag-x { font-size: 14px; margin-left: 2px; opacity: 0.8; }
+.district-tag:hover .tag-x { opacity: 1; }
+
+.neighborhood-modal {
+  max-height: 70vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.neighborhood-modal .modal-body {
+  overflow-y: auto;
+  flex: 1;
+  padding-bottom: 12px;
+}
+
+.neighborhood-search {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.neighborhood-search input {
+  width: 100%;
+  padding: 10px 14px 10px 36px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.neighborhood-search input:focus { border-color: var(--accent); }
+
+.neighborhood-search .search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.district-group { margin-bottom: 4px; }
+
+.district-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 8px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+  user-select: none;
+}
+
+.district-header:hover { background: var(--bg); }
+
+.district-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.district-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+  flex: 1;
+}
+
+.district-arrow {
+  font-size: 12px;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+}
+
+.district-group.expanded .district-arrow { transform: rotate(180deg); }
+
+.district-quarters {
+  display: none;
+  padding: 0 8px 8px 26px;
+}
+
+.district-group.expanded .district-quarters { display: block; }
+
+.quarter-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.quarter-item:hover { background: var(--bg); }
+
+.quarter-item input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.quarter-item label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  flex: 1;
+}
+
+.quarter-item input:checked + label { color: var(--text); font-weight: 500; }
+
+.neighborhood-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.neighborhood-actions button {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-clear {
+  background: white;
+  border: 1.5px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.btn-clear:hover { border-color: var(--danger); color: var(--danger); }
+
+.btn-apply {
+  background: var(--accent);
+  border: none;
+  color: white;
+}
+
+.btn-apply:hover { background: var(--accent-light); }
+
+.task-location-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg);
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-right: 4px;
+}
+
+.row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Payment method in create form */
+.payment-method-cards {
+  display: flex;
+  gap: 8px;
+}
+
+.pay-method-card {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+  background: white;
+}
+
+.pay-method-card.active {
+  border-color: var(--accent);
+  background: var(--accent-pale);
+}
+
+.pay-method-card .pm-icon { font-size: 24px; margin-bottom: 4px; }
+.pay-method-card .pm-label { font-size: 12px; font-weight: 600; color: var(--text); }
+.pay-method-card .pm-desc { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+.pay-method-card.disabled {
+  opacity: 0.5;
+  cursor: default;
+  position: relative;
+}
+
+.coming-soon-tag {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 7px;
+  font-weight: 700;
+  color: white;
+  background: var(--primary);
+  padding: 2px 4px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+/* ===== MY TASKS VIEW ===== */
+.my-tasks-header { padding: 16px 16px 0; }
+
+.my-tasks-header h2 {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.tab-bar {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--border);
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 10px 0;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+
+.my-tasks-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.my-task-card {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 14px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.my-task-card:hover { box-shadow: var(--shadow-md); }
+
+.my-task-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 6px;
+}
+
+.my-task-card h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+  margin-right: 8px;
+}
+
+.status-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.status-badge.open { background: #dbeafe; color: #1e40af; }
+.status-badge.selecting { background: #fef3c7; color: #92400e; }
+.status-badge.in-progress { background: #d1fae5; color: #065f46; }
+.status-badge.completed { background: #e0e7ff; color: #3730a3; }
+.status-badge.pending { background: #f1f5f9; color: #475569; }
+.status-badge.selected { background: #d1fae5; color: #065f46; }
+.status-badge.not-selected { background: #fee2e2; color: #991b1b; }
+
+.my-task-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mark-complete-btn {
+  margin-top: 10px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--success);
+  color: white;
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ===== MESSAGES VIEW ===== */
+.messages-header { padding: 16px; }
+
+.messages-header h2 {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.chat-list { padding: 0 16px; display: flex; flex-direction: column; gap: 2px; }
+
+.chat-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.chat-item:hover { background: white; }
+.chat-item .avatar { width: 44px; height: 44px; font-size: 15px; }
+.chat-info { flex: 1; min-width: 0; }
+.chat-info .chat-name { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 1px; }
+.chat-info .chat-task { font-size: 11px; color: var(--accent); font-weight: 500; margin-bottom: 2px; }
+
+.chat-info .chat-preview {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-time { font-size: 11px; color: var(--text-muted); flex-shrink: 0; align-self: flex-start; margin-top: 2px; }
+
+.unread-dot {
+  width: 9px;
+  height: 9px;
+  background: var(--accent);
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.locked-chat { text-align: center; padding: 40px 30px; }
+.locked-chat .lock-icon { font-size: 48px; margin-bottom: 12px; }
+.locked-chat h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+.locked-chat p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+.chat-view { display: none; flex-direction: column; height: calc(100vh - 128px); }
+.chat-view.active { display: flex; }
+
+.chat-conv-header {
+  padding: 12px 16px;
+  background: white;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chat-conv-header .back-btn { margin-bottom: 0; }
+
+.chat-task-ref {
+  background: var(--bg);
+  margin: 0 16px;
+  padding: 10px 12px;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid var(--border);
+  border-top: none;
+}
+
+.chat-task-ref .task-title { font-size: 12px; font-weight: 600; color: var(--text); }
+
+.chat-task-ref .task-price-sm {
+  font-family: 'Fraunces', serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.msg-bubble {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.msg-bubble.sent {
+  align-self: flex-end;
+  background: var(--accent);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.msg-bubble.received {
+  align-self: flex-start;
+  background: white;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+
+.msg-time { font-size: 10px; color: var(--text-muted); margin-top: 2px; text-align: right; }
+.msg-time.left { text-align: left; }
+
+.chat-input-bar {
+  padding: 10px 16px 14px;
+  background: white;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.chat-input-bar input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 24px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  outline: none;
+}
+
+.chat-input-bar input:focus { border-color: var(--accent); }
+
+.send-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  color: white;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ===== WALLET VIEW ===== */
+.wallet-header-card {
+  margin: 16px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  border-radius: var(--radius-xl);
+  padding: 24px 20px;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.wallet-header-card::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 120px;
+  height: 120px;
+  background: rgba(255,255,255,0.08);
+  border-radius: var(--radius-full);
+}
+
+.wallet-header-card::after {
+  content: '';
+  position: absolute;
+  bottom: -20px;
+  left: -20px;
+  width: 80px;
+  height: 80px;
+  background: rgba(13,148,136,0.2);
+  border-radius: var(--radius-full);
+}
+
+.wallet-label { font-size: 13px; opacity: 0.8; margin-bottom: 4px; }
+
+.wallet-total {
+  font-family: 'Fraunces', serif;
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.wallet-breakdown { display: flex; gap: 20px; }
+.wallet-sub .sub-label { font-size: 11px; opacity: 0.7; }
+.wallet-sub .sub-value { font-size: 16px; font-weight: 600; }
+
+.add-funds-btn {
+  margin: 0 16px 16px;
+  width: calc(100% - 32px);
+  padding: 13px;
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--primary);
+  border: 1.5px solid var(--border);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.escrow-info {
+  margin: 0 16px 16px;
+  background: var(--accent-pale);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.escrow-info .info-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.escrow-info p { font-size: 12.5px; color: var(--primary); line-height: 1.5; }
+
+.tx-section { padding: 0 16px 16px; }
+.tx-section h3 { font-size: 16px; font-weight: 700; margin-bottom: 12px; color: var(--text); }
+.tx-list { display: flex; flex-direction: column; gap: 2px; }
+
+.tx-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: white;
+  border-radius: var(--radius-md);
+}
+
+.tx-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.tx-icon.deposit { background: #dbeafe; }
+.tx-icon.held { background: #fef3c7; }
+.tx-icon.released { background: #d1fae5; }
+.tx-icon.received { background: #dbeafe; }
+
+.tx-details { flex: 1; }
+.tx-details .tx-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.tx-details .tx-date { font-size: 11px; color: var(--text-muted); }
+
+.tx-amount { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 700; }
+.tx-amount.positive { color: var(--success); }
+.tx-amount.negative { color: var(--text); }
+.tx-amount.pending-tx { color: var(--warning); }
+
+.tx-status {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: right;
+}
+
+.tx-status.held-s { color: var(--warning); }
+.tx-status.released-s { color: var(--success); }
+.tx-status.received-s { color: var(--received); }
+
+/* Cash mode wallet */
+.cash-wallet-msg {
+  margin: 16px;
+  padding: 24px;
+  text-align: center;
+}
+
+.cash-wallet-msg .cash-icon { font-size: 48px; margin-bottom: 12px; }
+.cash-wallet-msg h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+.cash-wallet-msg p { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px; }
+
+.cash-tips {
+  text-align: left;
+  margin: 0 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cash-tip {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border: 1px solid var(--border);
+}
+
+.cash-tip .tip-icon { font-size: 18px; flex-shrink: 0; }
+.cash-tip .tip-text { font-size: 12.5px; color: var(--text-secondary); line-height: 1.4; }
+.cash-tip .tip-text strong { color: var(--text); }
+
+/* Preview card */
+.preview-card {
+  background: var(--bg);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-top: 16px;
+  border: 1px solid var(--border);
+  display: none;
+}
+
+.preview-card.show { display: block; }
+
+.preview-card h4 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+/* Countdown */
+.countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--danger);
+}
+
+.countdown.ok { color: var(--accent); }
+
+.countdown .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: currentColor;
+  animation: blink 1.5s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.stars { color: var(--warning); letter-spacing: 1px; }
+
+/* Profile view */
+.profile-section { padding: 16px; }
+
+.profile-card {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: 24px 20px;
+  text-align: center;
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.profile-card .profile-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0 auto 12px;
+  position: relative;
+}
+
+.profile-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.profile-card .member-since { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+
+.trust-summary {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+  margin-top: 12px;
+}
+
+.trust-stat { text-align: center; }
+.trust-stat .stat-value { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 700; color: var(--primary); }
+.trust-stat .stat-label { font-size: 11px; color: var(--text-muted); }
+
+.trust-progress-card {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 16px;
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.trust-progress-card h4 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.progress-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.progress-item .check {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.progress-item .check.done { background: var(--accent-pale); color: var(--accent); }
+.progress-item .check.pending { background: var(--bg); color: var(--text-muted); border: 1.5px solid var(--border); }
+
+.progress-item .prog-text { font-size: 13px; color: var(--text); }
+.progress-item .prog-text.completed { color: var(--text-muted); text-decoration: line-through; }
+
+.mt-12 { margin-top: 12px; }
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+.empty-state .icon { font-size: 40px; margin-bottom: 10px; }
+.empty-state p { font-size: 13px; }
+
+/* ===== AUTH VIEW ===== */
+.auth-screen {
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+}
+
+.auth-screen .auth-logo {
+  font-family: 'Fraunces', serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 4px;
+  letter-spacing: -0.5px;
+}
+
+.auth-screen .auth-logo span { color: var(--accent); }
+
+.auth-screen .auth-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 28px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: 24px 20px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--border);
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 10px 0;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.auth-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+
+.auth-form { display: none; }
+.auth-form.active { display: block; }
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.auth-divider::before, .auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.btn-google {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--text);
+  border: 1.5px solid var(--border);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.btn-google:hover { border-color: var(--text-muted); box-shadow: var(--shadow-sm); }
+
+.btn-facebook {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: #1877F2;
+  color: white;
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.2s;
+}
+.btn-facebook:hover { background: #166FE5; }
+
+.social-btns { display: flex; flex-direction: column; gap: 10px; }
+
+.auth-error {
+  background: #fef2f2;
+  color: var(--danger);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  margin-bottom: 12px;
+  display: none;
+}
+
+.auth-error.show { display: block; }
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.signout-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--danger);
+  border: 1.5px solid var(--border);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 12px;
+  transition: background 0.2s;
+}
+
+.signout-btn:hover { background: #fef2f2; }
+
+.loading-spinner {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* Desktop sidebar - hidden by default */
+.desktop-sidebar {
+  display: none;
+}
+
+/* ===== RESPONSIVE BREAKPOINTS ===== */
+
+/* Tablet (768px+) */
+@media (min-width: 768px) {
+  .app-frame {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .tasks-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .my-tasks-list {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .categories-scroll {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
+  .cat-chip {
+    flex-shrink: 0;
+  }
+
+  .detail-info-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .modal {
+    max-width: 520px;
+    margin: 0 auto;
+    border-radius: var(--radius-xl);
+  }
+
+  .modal-overlay {
+    align-items: center;
+  }
+
+  .create-view {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .auth-card {
+    max-width: 420px;
+  }
+
+  .ad-banner {
+    margin: 8px 0;
+  }
+}
+
+/* Desktop (1024px+) */
+@media (min-width: 1024px) {
+  body {
+    background: #f1f5f9;
+  }
+
+  .app-frame {
+    max-width: 1200px;
+    margin: 0 auto;
+    overflow: visible;
+  }
+
+  #app.app-visible {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    grid-template-rows: 56px 1fr;
+  }
+
+  .app-header {
+    position: sticky;
+    top: 0;
+    left: auto;
+    right: auto;
+    grid-column: 1 / -1;
+    padding: 12px 24px;
+  }
+
+  .desktop-sidebar {
+    display: flex;
+    flex-direction: column;
+    background: white;
+    border-right: 1px solid var(--border);
+    padding: 16px 0;
+    position: sticky;
+    top: 56px;
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+  }
+
+  .sidebar-nav {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 8px;
+  }
+
+  .sidebar-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.15s;
+    border: none;
+    background: none;
+    font-family: 'DM Sans', sans-serif;
+    width: 100%;
+    text-align: left;
+  }
+
+  .sidebar-nav-item:hover {
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  .sidebar-nav-item.active {
+    background: var(--accent-pale);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .sidebar-nav-item .sidebar-icon {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .sidebar-nav-item .sidebar-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .sidebar-nav-item.create-sidebar-btn {
+    background: var(--accent);
+    color: white;
+    font-weight: 600;
+    margin: 8px 8px 0;
+    width: calc(100% - 16px);
+    justify-content: center;
+    border-radius: var(--radius-md);
+  }
+
+  .sidebar-nav-item.create-sidebar-btn:hover {
+    background: var(--accent-light);
+    color: white;
+  }
+
+  .app-content {
+    padding-top: 0;
+    padding-bottom: 0;
+    min-height: calc(100vh - 56px);
+  }
+
+  .bottom-nav {
+    display: none;
+  }
+
+  .tasks-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    padding: 0 24px 24px;
+  }
+
+  .my-tasks-list {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 14px;
+    padding: 16px 24px;
+  }
+
+  .categories-scroll {
+    padding: 20px 24px 8px;
+    flex-wrap: wrap;
+    overflow-x: visible;
+    gap: 10px;
+  }
+
+  .home-map-section {
+    margin: 0 24px 16px;
+  }
+
+  .search-section {
+    padding: 16px 24px;
+    padding-top: 8px;
+    padding-bottom: 20px;
+  }
+
+  .sort-bar {
+    padding: 4px 24px 8px;
+  }
+
+  .detail-info-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+
+  .detail-header {
+    padding: 20px 24px;
+  }
+
+  .detail-body {
+    padding: 20px 24px;
+    max-width: 800px;
+  }
+
+  .bids-section {
+    padding: 0 24px 24px;
+    max-width: 800px;
+  }
+
+  .create-view {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  .modal {
+    max-width: 520px;
+    border-radius: var(--radius-xl);
+  }
+
+  .modal-overlay {
+    align-items: center;
+  }
+
+  .profile-section {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  .wallet-header-card {
+    margin: 24px;
+  }
+
+  .add-funds-btn {
+    margin: 0 24px 16px;
+    width: calc(100% - 48px);
+  }
+
+  .tx-section {
+    padding: 0 24px 24px;
+  }
+
+  .escrow-info {
+    margin: 0 24px 16px;
+  }
+
+  .cash-wallet-msg {
+    margin: 24px;
+  }
+
+  .cash-tips {
+    margin: 0 24px 16px;
+  }
+
+  .my-tasks-header {
+    padding: 16px 24px 0;
+  }
+
+  .messages-header {
+    padding: 16px 24px;
+  }
+
+  .chat-list {
+    padding: 0 24px;
+  }
+
+  /* Chat split screen */
+  #view-messages.active {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    min-height: calc(100vh - 56px);
+  }
+
+  #view-messages #messages-list-view {
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    max-height: calc(100vh - 56px);
+  }
+
+  #view-messages .chat-view {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 56px);
+  }
+
+  #view-messages .chat-view:not(.active) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #view-messages .chat-view:not(.active)::after {
+    content: 'Select a conversation';
+    color: var(--text-muted);
+    font-size: 16px;
+  }
+
+  .place-bid-sticky {
+    left: calc(240px + 50%);
+    transform: translateX(-50%);
+  }
+
+  .payment-mode-bar {
+    margin: 12px 24px;
+  }
+}
+
+/* Large Desktop (1440px+) */
+@media (min-width: 1440px) {
+  .app-frame {
+    max-width: 1400px;
+  }
+
+  .tasks-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+  }
+
+  .my-tasks-list {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 16px;
+  }
+
+  .create-view {
+    max-width: 800px;
+  }
+
+  .detail-body {
+    max-width: 900px;
+  }
+
+  .bids-section {
+    max-width: 900px;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH MODAL (on-demand overlay — not a full-page gate) -->
+<div class="auth-modal-overlay" id="auth-screen-wrapper">
+  <div class="auth-screen" style="min-height:unset;width:100%;max-width:420px;border-radius:var(--radius-xl);position:relative;padding:28px 20px 32px;">
+    <button class="auth-modal-close" onclick="closeAuthModal()" aria-label="Затвори">✕</button>
+    <div class="auth-logo">Quick<span>Task</span></div>
+    <p class="auth-subtitle">Свърши нещата наблизо</p>
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchAuthTab('login')">Вход</button>
+        <button class="auth-tab" onclick="switchAuthTab('signup')">Регистрация</button>
+      </div>
+      <div class="auth-error" id="auth-error"></div>
+
+      <!-- LOGIN FORM -->
+      <div class="auth-form active" id="form-login">
+        <div class="form-group">
+          <label>Имейл</label>
+          <input class="form-input" id="login-email" type="email" placeholder="you@example.com">
+        </div>
+        <div class="form-group">
+          <label>Парола</label>
+          <input class="form-input" id="login-password" type="password" placeholder="Вашата парола">
+        </div>
+        <button class="btn-primary" id="btn-login" onclick="handleLogin()">Вход</button>
+        <div class="auth-divider">или</div>
+        <div class="social-btns">
+          <button class="btn-google" onclick="handleGoogleAuth()">
+            <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            Продължи с Google
+          </button>
+          <button class="btn-facebook" onclick="handleFacebookAuth()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            Продължи с Facebook
+          </button>
+        </div>
+      </div>
+
+      <!-- SIGNUP FORM -->
+      <div class="auth-form" id="form-signup">
+        <div class="form-group">
+          <label>Име и фамилия</label>
+          <input class="form-input" id="signup-name" type="text" placeholder="Мария Петрова">
+        </div>
+        <div class="form-group">
+          <label>Потребителско име</label>
+          <input class="form-input" id="signup-username" type="text" placeholder="maria_p">
+        </div>
+        <div class="form-group">
+          <label>Имейл</label>
+          <input class="form-input" id="signup-email" type="email" placeholder="you@example.com">
+        </div>
+        <div class="form-group">
+          <label>Парола</label>
+          <input class="form-input" id="signup-password" type="password" placeholder="Минимум 6 символа">
+        </div>
+        <button class="btn-primary" id="btn-signup" onclick="handleSignup()">Създай акаунт</button>
+        <div class="auth-divider">или</div>
+        <div class="social-btns">
+          <button class="btn-google" onclick="handleGoogleAuth()">
+            <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            Продължи с Google
+          </button>
+          <button class="btn-facebook" onclick="handleFacebookAuth()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            Продължи с Facebook
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app-frame app-visible" id="app">
+  <!-- Header -->
+  <header class="app-header">
+    <div class="logo">Quick<span>Task</span></div>
+    <div class="header-right" id="header-right">
+      <!-- Shown when logged out (default until session resolves) -->
+      <div class="header-auth-btns" id="header-auth-btns">
+        <button class="btn-header-login" onclick="showAuthModal(); switchAuthTab('login')">Вход</button>
+        <button class="btn-header-signup" onclick="showAuthModal(); switchAuthTab('signup')">Регистрация</button>
+      </div>
+      <!-- Shown when logged in -->
+      <div id="header-user-btns" style="display:none;align-items:center;gap:8px;">
+        <button class="notif-btn">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          <span class="notif-badge"></span>
+        </button>
+        <div class="profile-avatar-sm" onclick="showView('profile')">?</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Desktop Sidebar -->
+  <aside class="desktop-sidebar">
+    <nav class="sidebar-nav">
+      <button class="sidebar-nav-item active" onclick="showView('home')">
+        <span class="sidebar-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+        Home
+      </button>
+      <button class="sidebar-nav-item" onclick="showView('mytasks')">
+        <span class="sidebar-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+        My Tasks
+      </button>
+      <button class="sidebar-nav-item" onclick="showView('messages')">
+        <span class="sidebar-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></span>
+        Messages
+      </button>
+      <button class="sidebar-nav-item" onclick="showView('wallet')">
+        <span class="sidebar-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><path d="M1 10h22"/></svg></span>
+        Wallet
+      </button>
+      <button class="sidebar-nav-item create-sidebar-btn" onclick="showView('create')">
+        <span class="sidebar-icon">+</span>
+        Post a Task
+      </button>
+    </nav>
+  </aside>
+
+  <main class="app-content">
+    <!-- HOME VIEW -->
+    <div class="view active" id="view-home">
+      <div class="search-section">
+        <div class="location-bar" onclick="openNeighborhoodPicker()">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z"/></svg>
+          <span id="location-bar-text">София · Всички квартали</span>
+        </div>
+        <div class="search-bar">
+          <svg width="18" height="18" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" id="search-keyword" placeholder="Търси задачи... (напр. монтаж)" oninput="renderTaskCards()">
+        </div>
+        <div class="search-filters">
+          <select class="filter-select" id="filter-time" onchange="renderTaskCards()">
+            <option value="">Всяко време</option>
+            <option value="1">До 1 час</option>
+            <option value="3">До 3 часа</option>
+            <option value="6">До 6 часа</option>
+            <option value="12">До 12 часа</option>
+            <option value="24">До 24 часа</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="categories-scroll">
+        <button class="cat-chip active">All</button>
+        <button class="cat-chip">Home Repair</button>
+        <button class="cat-chip">Cleaning</button>
+        <button class="cat-chip">Delivery</button>
+        <button class="cat-chip">Errands</button>
+        <button class="cat-chip">Moving</button>
+        <button class="cat-chip">Tech Help</button>
+        <button class="cat-chip">Plumbing</button>
+        <button class="cat-chip">Electrical</button>
+        <button class="cat-chip">Painting</button>
+        <button class="cat-chip">Gardening</button>
+        <button class="cat-chip">Pet Care</button>
+        <button class="cat-chip">Tutoring</button>
+        <button class="cat-chip">Beauty & Wellness</button>
+        <button class="cat-chip">Other</button>
+      </div>
+
+      <div class="home-map-section" id="home-map-section">
+        <h4>📍 Търси по район</h4>
+        <svg class="sofia-map" id="home-sofia-map" viewBox="0 0 500 400" xmlns="http://www.w3.org/2000/svg">
+          <path data-district="Нови Искър" d="M180,10 L220,8 L260,15 L270,50 L240,70 L200,65 L175,45 Z" fill="#65a30d" opacity="0.7" onclick="toggleDistrictHome('Нови Искър')"><title>Нови Искър</title></path>
+          <path data-district="Кремиковци" d="M310,15 L370,20 L400,55 L390,100 L350,95 L310,70 L300,45 Z" fill="#ca8a04" opacity="0.7" onclick="toggleDistrictHome('Кремиковци')"><title>Кремиковци</title></path>
+          <path data-district="Банкя" d="M10,150 L55,130 L80,155 L75,195 L45,200 L15,185 Z" fill="#9333ea" opacity="0.7" onclick="toggleDistrictHome('Банкя')"><title>Банкя</title></path>
+          <path data-district="Панчарево" d="M340,300 L395,280 L430,310 L425,360 L380,380 L345,355 Z" fill="#be185d" opacity="0.7" onclick="toggleDistrictHome('Панчарево')"><title>Панчарево</title></path>
+          <path data-district="Връбница" d="M105,70 L160,60 L185,55 L200,65 L195,105 L155,115 L110,105 Z" fill="#0891b2" opacity="0.7" onclick="toggleDistrictHome('Връбница')"><title>Връбница</title></path>
+          <path data-district="Надежда" d="M200,65 L240,70 L270,75 L275,115 L245,130 L210,125 L195,105 Z" fill="#f43f5e" opacity="0.7" onclick="toggleDistrictHome('Надежда')"><title>Надежда</title></path>
+          <path data-district="Красна поляна" d="M90,115 L155,115 L170,155 L150,185 L105,180 L80,155 Z" fill="#0ea5e9" opacity="0.7" onclick="toggleDistrictHome('Красна поляна')"><title>Красна поляна</title></path>
+          <path data-district="Люлин" d="M75,195 L105,180 L150,185 L160,220 L140,255 L95,250 L70,225 Z" fill="#7c3aed" opacity="0.7" onclick="toggleDistrictHome('Люлин')"><title>Люлин</title></path>
+          <path data-district="Овча купел" d="M95,250 L140,255 L155,290 L140,325 L100,320 L80,290 Z" fill="#dc2626" opacity="0.7" onclick="toggleDistrictHome('Овча купел')"><title>Овча купел</title></path>
+          <path data-district="Витоша" d="M140,325 L155,290 L195,285 L240,300 L260,345 L230,380 L170,375 Z" fill="#059669" opacity="0.7" onclick="toggleDistrictHome('Витоша')"><title>Витоша</title></path>
+          <path data-district="Искър" d="M320,130 L370,125 L390,160 L375,200 L335,195 L315,165 Z" fill="#10b981" opacity="0.7" onclick="toggleDistrictHome('Искър')"><title>Искър</title></path>
+          <path data-district="Младост" d="M315,200 L375,200 L385,240 L370,275 L325,270 L305,240 Z" fill="#6366f1" opacity="0.7" onclick="toggleDistrictHome('Младост')"><title>Младост</title></path>
+          <path data-district="Студентски" d="M305,240 L325,270 L340,300 L310,315 L275,300 L270,265 Z" fill="#d946ef" opacity="0.7" onclick="toggleDistrictHome('Студентски')"><title>Студентски</title></path>
+          <path data-district="Сердика" d="M210,125 L245,130 L260,150 L250,175 L225,180 L205,165 L195,145 Z" fill="#f59e0b" opacity="0.7" onclick="toggleDistrictHome('Сердика')"><title>Сердика</title></path>
+          <path data-district="Подуяне" d="M260,115 L310,120 L320,155 L300,180 L270,175 L260,150 Z" fill="#ec4899" opacity="0.7" onclick="toggleDistrictHome('Подуяне')"><title>Подуяне</title></path>
+          <path data-district="Илинден" d="M150,185 L180,175 L205,165 L195,200 L175,215 L160,220 Z" fill="#a855f7" opacity="0.7" onclick="toggleDistrictHome('Илинден')"><title>Илинден</title></path>
+          <path data-district="Слатина" d="M300,180 L335,195 L315,225 L285,220 L270,200 Z" fill="#06b6d4" opacity="0.7" onclick="toggleDistrictHome('Слатина')"><title>Слатина</title></path>
+          <path data-district="Изгрев" d="M270,200 L285,220 L305,240 L270,255 L250,235 L255,215 Z" fill="#84cc16" opacity="0.7" onclick="toggleDistrictHome('Изгрев')"><title>Изгрев</title></path>
+          <path data-district="Лозенец" d="M230,230 L255,215 L250,255 L240,275 L215,270 L210,245 Z" fill="#22c55e" opacity="0.7" onclick="toggleDistrictHome('Лозенец')"><title>Лозенец</title></path>
+          <path data-district="Красно село" d="M165,225 L195,215 L210,245 L200,275 L175,280 L155,260 Z" fill="#3b82f6" opacity="0.7" onclick="toggleDistrictHome('Красно село')"><title>Красно село</title></path>
+          <path data-district="Възраждане" d="M195,180 L215,180 L220,200 L210,215 L195,215 L185,200 Z" fill="#8b5cf6" opacity="0.7" onclick="toggleDistrictHome('Възраждане')"><title>Възраждане</title></path>
+          <path data-district="Средец" d="M220,185 L245,185 L250,205 L240,220 L225,218 L220,200 Z" fill="#ef4444" opacity="0.7" onclick="toggleDistrictHome('Средец')"><title>Средец</title></path>
+          <path data-district="Оборище" d="M245,170 L270,175 L270,200 L255,210 L245,200 L245,185 Z" fill="#f97316" opacity="0.7" onclick="toggleDistrictHome('Оборище')"><title>Оборище</title></path>
+          <path data-district="Триадица" d="M210,215 L230,218 L235,240 L215,255 L200,245 L195,225 Z" fill="#14b8a6" opacity="0.7" onclick="toggleDistrictHome('Триадица')"><title>Триадица</title></path>
+        </svg>
+        <select class="district-select" id="home-district-select" onchange="selectDistrictFromDropdown(this.value)">
+          <option value="">Всички райони — изберете район</option>
+        </select>
+        <div class="home-map-selected-tags" id="home-selected-tags"></div>
+      </div>
+
+      <div class="sort-bar">
+        <span id="task-count">12 tasks nearby</span>
+        <select class="sort-select">
+          <option>Nearest first</option>
+          <option>Newest first</option>
+          <option>Price: Low to High</option>
+          <option>Price: High to Low</option>
+        </select>
+      </div>
+
+      <div class="tasks-grid" id="tasks-grid"></div>
+    </div>
+
+    <!-- TASK DETAIL VIEW -->
+    <div class="view" id="view-detail">
+      <div class="detail-header">
+        <button class="back-btn" onclick="showView('home')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Back
+        </button>
+        <div id="detail-content"></div>
+      </div>
+      <div class="detail-body" id="detail-body"></div>
+      <div class="bids-section" id="bids-section"></div>
+      <div class="place-bid-sticky" id="bid-sticky" style="display:none">
+        <button class="place-bid-btn" onclick="openBidModal()">Place a Bid</button>
+      </div>
+    </div>
+
+    <!-- CREATE TASK VIEW -->
+    <div class="view" id="view-create" style="position:relative;">
+      <!-- Guest overlay: captures all interaction and shows auth modal -->
+      <div id="create-guest-overlay" onclick="requireAuth(() => showView('create'))" style="display:none;position:absolute;inset:0;z-index:5;cursor:pointer;" title="Sign in to post a task"></div>
+      <div class="create-view">
+        <h2>Post a Task</h2>
+        <div class="form-group">
+          <label>What do you need done?</label>
+          <input class="form-input" id="create-title" type="text" placeholder="e.g. Fix leaking kitchen faucet">
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea class="form-textarea" id="create-desc" placeholder="Describe the task in detail..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select class="form-select" id="create-cat">
+            <option value="">Select category</option>
+            <option>Home Repair</option>
+            <option>Cleaning</option>
+            <option>Delivery</option>
+            <option>Errands</option>
+            <option>Moving</option>
+            <option>Tech Help</option>
+            <option>Plumbing</option>
+            <option>Electrical</option>
+            <option>Painting</option>
+            <option>Gardening</option>
+            <option>Pet Care</option>
+            <option>Tutoring</option>
+            <option>Beauty & Wellness</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Photos (optional)</label>
+          <div class="photo-upload">
+            <div class="icon">📷</div>
+            <p>Tap to add photos</p>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Bidding Type</label>
+          <div class="toggle-group">
+            <button class="toggle-opt active" onclick="toggleBidType(this, 'price')">Let bidders propose price</button>
+            <button class="toggle-opt" onclick="toggleBidType(this, 'fixed')">Fixed price only</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label id="price-label">Suggested Budget (€)</label>
+          <input class="form-input" id="create-price" type="number" placeholder="15">
+        </div>
+        <div class="form-group">
+          <label>Payment Method</label>
+          <div class="payment-method-cards">
+            <div class="pay-method-card active" onclick="selectPayMethod(this,'cash')">
+              <div class="pm-icon">💵</div>
+              <div class="pm-label">Cash</div>
+              <div class="pm-desc">Pay in person</div>
+            </div>
+            <div class="pay-method-card disabled">
+              <span class="coming-soon-tag">Coming Soon</span>
+              <div class="pm-icon">🔒</div>
+              <div class="pm-label">Escrow</div>
+              <div class="pm-desc">Held securely</div>
+            </div>
+          </div>
+        </div>
+        <div class="row-2">
+          <div class="form-group">
+            <label>Bidding Duration</label>
+            <select class="form-select" id="create-duration">
+              <option>1 hour</option>
+              <option>3 hours</option>
+              <option selected>6 hours</option>
+              <option>12 hours</option>
+              <option>24 hours</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Selection Time</label>
+            <select class="form-select" id="create-selection">
+              <option>1 hour</option>
+              <option selected>3 hours</option>
+              <option>6 hours</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Квартал</label>
+          <select class="form-select" id="create-neighborhood"></select>
+        </div>
+        <div class="form-group">
+          <label>Адрес (незадължително)</label>
+          <input class="form-input" id="create-address" type="text" placeholder="ул. Витоша 45">
+        </div>
+        <button class="btn-primary mt-12" onclick="previewTask()">Preview & Post</button>
+        <div class="preview-card" id="preview-card">
+          <h4>Preview</h4>
+          <div id="preview-content"></div>
+          <div style="display:flex;gap:8px;margin-top:14px">
+            <button class="btn-secondary" style="flex:1" onclick="document.getElementById('preview-card').classList.remove('show')">Edit</button>
+            <button class="btn-primary" style="flex:1" onclick="postTask()">Post Task</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MY TASKS VIEW -->
+    <div class="view" id="view-mytasks">
+      <div class="my-tasks-header">
+        <h2>My Tasks</h2>
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchMyTab(this, 'posted')">Posted</button>
+          <button class="tab-btn" onclick="switchMyTab(this, 'bidding')">Bidding On</button>
+        </div>
+      </div>
+      <div class="my-tasks-list" id="posted-tasks"></div>
+      <div class="my-tasks-list" id="bidding-tasks" style="display:none"></div>
+    </div>
+
+    <!-- MESSAGES VIEW -->
+    <div class="view" id="view-messages">
+      <div id="messages-list-view">
+        <div class="messages-header"><h2>Messages</h2></div>
+        <div class="chat-list" id="chat-list"></div>
+      </div>
+      <div class="chat-view" id="chat-conversation"></div>
+    </div>
+
+    <!-- WALLET VIEW -->
+    <div class="view" id="view-wallet">
+      <div id="wallet-content"></div>
+    </div>
+
+    <!-- PROFILE VIEW -->
+    <div class="view" id="view-profile">
+      <div class="profile-section">
+        <button class="back-btn" onclick="showView('home')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Back
+        </button>
+        <div class="profile-card">
+          <div class="profile-avatar">IH</div>
+          <h3>Iliyan H.</h3>
+          <div class="member-since">Member since Jan 2026</div>
+          <div style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap">
+            <span class="trust-badge verified">✓ Phone Verified</span>
+            <span class="trust-badge trusted">⭐ Trusted</span>
+          </div>
+          <div class="trust-summary">
+            <div class="trust-stat">
+              <div class="stat-value">4.8</div>
+              <div class="stat-label">Rating</div>
+            </div>
+            <div class="trust-stat">
+              <div class="stat-value">23</div>
+              <div class="stat-label">Tasks Done</div>
+            </div>
+            <div class="trust-stat">
+              <div class="stat-value">97%</div>
+              <div class="stat-label">Completion</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="trust-progress-card">
+          <h4>🛡️ Trust Level Progress</h4>
+          <div class="progress-item">
+            <div class="check done">✓</div>
+            <span class="prog-text completed">Email verified</span>
+          </div>
+          <div class="progress-item">
+            <div class="check done">✓</div>
+            <span class="prog-text completed">Phone verified</span>
+          </div>
+          <div class="progress-item">
+            <div class="check done">✓</div>
+            <span class="prog-text completed">Google account linked</span>
+          </div>
+          <div class="progress-item">
+            <div class="check done">✓</div>
+            <span class="prog-text completed">5+ tasks completed</span>
+          </div>
+          <div class="progress-item">
+            <div class="check done">✓</div>
+            <span class="prog-text completed">4.5+ star rating</span>
+          </div>
+          <div class="progress-item">
+            <div class="check pending">○</div>
+            <span class="prog-text">15+ tasks completed (12 more to go)</span>
+          </div>
+          <div class="progress-item">
+            <div class="check pending">○</div>
+            <span class="prog-text">Premium member</span>
+          </div>
+        </div>
+
+        <div style="font-size:11px;color:var(--text-muted);text-align:center;padding:8px">
+          Higher trust = more visibility in search results
+        </div>
+        <button class="signout-btn" onclick="handleSignOut()">Sign Out</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="showView('home')">
+      <span class="nav-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+      <span>Home</span>
+    </button>
+    <button class="nav-item" onclick="showView('mytasks')">
+      <span class="nav-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+      <span>My Tasks</span>
+    </button>
+    <button class="nav-item create-btn" onclick="showView('create')">
+      <span class="nav-icon">+</span>
+      <span>Post</span>
+    </button>
+    <button class="nav-item" onclick="showView('messages')">
+      <span class="nav-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></span>
+      <span class="msg-badge">2</span>
+      <span>Messages</span>
+    </button>
+    <button class="nav-item" onclick="showView('wallet')">
+      <span class="nav-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><path d="M1 10h22"/></svg></span>
+      <span>Wallet</span>
+    </button>
+  </nav>
+
+  <!-- NEIGHBORHOOD PICKER MODAL -->
+  <div class="modal-overlay" id="neighborhood-modal">
+    <div class="modal neighborhood-modal">
+      <button class="modal-close" onclick="closeNeighborhoodPicker()">&times;</button>
+      <h3>Избери квартал</h3>
+      <svg class="sofia-map" viewBox="0 0 500 400" xmlns="http://www.w3.org/2000/svg">
+        <!-- Far outer ring -->
+        <path data-district="Нови Искър" d="M180,10 L220,8 L260,15 L270,50 L240,70 L200,65 L175,45 Z" fill="#65a30d" opacity="0.7" onclick="toggleDistrictOnMap('Нови Искър')"><title>Нови Искър</title></path>
+        <path data-district="Кремиковци" d="M310,15 L370,20 L400,55 L390,100 L350,95 L310,70 L300,45 Z" fill="#ca8a04" opacity="0.7" onclick="toggleDistrictOnMap('Кремиковци')"><title>Кремиковци</title></path>
+        <path data-district="Банкя" d="M10,150 L55,130 L80,155 L75,195 L45,200 L15,185 Z" fill="#9333ea" opacity="0.7" onclick="toggleDistrictOnMap('Банкя')"><title>Банкя</title></path>
+        <path data-district="Панчарево" d="M340,300 L395,280 L430,310 L425,360 L380,380 L345,355 Z" fill="#be185d" opacity="0.7" onclick="toggleDistrictOnMap('Панчарево')"><title>Панчарево</title></path>
+        <!-- Outer ring -->
+        <path data-district="Връбница" d="M105,70 L160,60 L185,55 L200,65 L195,105 L155,115 L110,105 Z" fill="#0891b2" opacity="0.7" onclick="toggleDistrictOnMap('Връбница')"><title>Връбница</title></path>
+        <path data-district="Надежда" d="M200,65 L240,70 L270,75 L275,115 L245,130 L210,125 L195,105 Z" fill="#f43f5e" opacity="0.7" onclick="toggleDistrictOnMap('Надежда')"><title>Надежда</title></path>
+        <path data-district="Красна поляна" d="M90,115 L155,115 L170,155 L150,185 L105,180 L80,155 Z" fill="#0ea5e9" opacity="0.7" onclick="toggleDistrictOnMap('Красна поляна')"><title>Красна поляна</title></path>
+        <path data-district="Люлин" d="M75,195 L105,180 L150,185 L160,220 L140,255 L95,250 L70,225 Z" fill="#7c3aed" opacity="0.7" onclick="toggleDistrictOnMap('Люлин')"><title>Люлин</title></path>
+        <path data-district="Овча купел" d="M95,250 L140,255 L155,290 L140,325 L100,320 L80,290 Z" fill="#dc2626" opacity="0.7" onclick="toggleDistrictOnMap('Овча купел')"><title>Овча купел</title></path>
+        <path data-district="Витоша" d="M140,325 L155,290 L195,285 L240,300 L260,345 L230,380 L170,375 Z" fill="#059669" opacity="0.7" onclick="toggleDistrictOnMap('Витоша')"><title>Витоша</title></path>
+        <path data-district="Искър" d="M320,130 L370,125 L390,160 L375,200 L335,195 L315,165 Z" fill="#10b981" opacity="0.7" onclick="toggleDistrictOnMap('Искър')"><title>Искър</title></path>
+        <path data-district="Младост" d="M315,200 L375,200 L385,240 L370,275 L325,270 L305,240 Z" fill="#6366f1" opacity="0.7" onclick="toggleDistrictOnMap('Младост')"><title>Младост</title></path>
+        <path data-district="Студентски" d="M305,240 L325,270 L340,300 L310,315 L275,300 L270,265 Z" fill="#d946ef" opacity="0.7" onclick="toggleDistrictOnMap('Студентски')"><title>Студентски</title></path>
+        <!-- Inner ring -->
+        <path data-district="Сердика" d="M210,125 L245,130 L260,150 L250,175 L225,180 L205,165 L195,145 Z" fill="#f59e0b" opacity="0.7" onclick="toggleDistrictOnMap('Сердика')"><title>Сердика</title></path>
+        <path data-district="Подуяне" d="M260,115 L310,120 L320,155 L300,180 L270,175 L260,150 Z" fill="#ec4899" opacity="0.7" onclick="toggleDistrictOnMap('Подуяне')"><title>Подуяне</title></path>
+        <path data-district="Илинден" d="M150,185 L180,175 L205,165 L195,200 L175,215 L160,220 Z" fill="#a855f7" opacity="0.7" onclick="toggleDistrictOnMap('Илинден')"><title>Илинден</title></path>
+        <path data-district="Слатина" d="M300,180 L335,195 L315,225 L285,220 L270,200 Z" fill="#06b6d4" opacity="0.7" onclick="toggleDistrictOnMap('Слатина')"><title>Слатина</title></path>
+        <path data-district="Изгрев" d="M270,200 L285,220 L305,240 L270,255 L250,235 L255,215 Z" fill="#84cc16" opacity="0.7" onclick="toggleDistrictOnMap('Изгрев')"><title>Изгрев</title></path>
+        <path data-district="Лозенец" d="M230,230 L255,215 L250,255 L240,275 L215,270 L210,245 Z" fill="#22c55e" opacity="0.7" onclick="toggleDistrictOnMap('Лозенец')"><title>Лозенец</title></path>
+        <path data-district="Красно село" d="M165,225 L195,215 L210,245 L200,275 L175,280 L155,260 Z" fill="#3b82f6" opacity="0.7" onclick="toggleDistrictOnMap('Красно село')"><title>Красно село</title></path>
+        <!-- Center districts -->
+        <path data-district="Възраждане" d="M195,180 L215,180 L220,200 L210,215 L195,215 L185,200 Z" fill="#8b5cf6" opacity="0.7" onclick="toggleDistrictOnMap('Възраждане')"><title>Възраждане</title></path>
+        <path data-district="Средец" d="M220,185 L245,185 L250,205 L240,220 L225,218 L220,200 Z" fill="#ef4444" opacity="0.7" onclick="toggleDistrictOnMap('Средец')"><title>Средец</title></path>
+        <path data-district="Оборище" d="M245,170 L270,175 L270,200 L255,210 L245,200 L245,185 Z" fill="#f97316" opacity="0.7" onclick="toggleDistrictOnMap('Оборище')"><title>Оборище</title></path>
+        <path data-district="Триадица" d="M210,215 L230,218 L235,240 L215,255 L200,245 L195,225 Z" fill="#14b8a6" opacity="0.7" onclick="toggleDistrictOnMap('Триадица')"><title>Триадица</title></path>
+      </svg>
+      <div class="neighborhood-search">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="neighborhood-search-input" placeholder="Търси квартал...">
+      </div>
+      <div class="modal-body" id="neighborhood-list"></div>
+      <div class="neighborhood-actions">
+        <button class="btn-clear" onclick="clearNeighborhoods()">Изчисти</button>
+        <button class="btn-apply" onclick="applyNeighborhoods()">Приложи</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BID MODAL -->
+  <div class="modal-overlay" id="bid-modal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeBidModal()">&times;</button>
+      <h3 id="bid-modal-title">Place Your Bid</h3>
+      <div id="bid-modal-body">
+        <div class="form-group" id="bid-price-group">
+          <label>Your Price (€)</label>
+          <input class="form-input" type="number" placeholder="Enter your price" id="bid-price-input">
+        </div>
+        <div class="form-group">
+          <label>Message to poster</label>
+          <textarea class="form-textarea" placeholder="Why should they pick you? Mention your experience..." id="bid-message-input"></textarea>
+        </div>
+        <button class="btn-primary" onclick="submitBid()">Submit Bid</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" style="position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--primary);color:white;padding:12px 24px;border-radius:var(--radius-md);font-size:14px;font-weight:600;box-shadow:var(--shadow-lg);z-index:300;display:none;animation:slideUp 0.3s ease;white-space:nowrap;"></div>
+</div>
+
+<script>
+// ===== SUPABASE INIT =====
+const SUPABASE_URL = 'https://yboawqkhjkjutzerypiv.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlib2F3cWtoamtqdXR6ZXJ5cGl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2MDA1NzgsImV4cCI6MjA4NzE3NjU3OH0.hPCnClaDEd925f1_aYoP89XVr45NssMYA3PYN_zNhk4';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ===== APP STATE =====
+let paymentMode = 'cash';
+let currentTask = null;
+let currentUser = null;
+let currentProfile = null;
+let pendingAction = null; // action to run after login
+let currentConvId = null;
+
+const colors = ['#0d9488','#6366f1','#f59e0b','#ef4444','#8b5cf6','#ec4899','#0ea5e9','#f97316','#14b8a6','#a855f7'];
+
+const TRUST_MAP = {
+  'new': { label:'New', badge:'new-user', dots:1 },
+  'verified': { label:'Verified', badge:'verified', dots:2 },
+  'active': { label:'Active', badge:'verified', dots:3 },
+  'trusted': { label:'Trusted', badge:'trusted', dots:4 },
+  'premium': { label:'Premium', badge:'premium', dots:5 }
+};
+
+const CAT_MAP = {
+  'home-repair':'Home Repair', 'cleaning':'Cleaning', 'delivery':'Delivery',
+  'errands':'Errands', 'moving':'Moving', 'tech-help':'Tech Help',
+  'plumbing':'Plumbing', 'electrical':'Electrical', 'painting':'Painting',
+  'gardening':'Gardening', 'pet-care':'Pet Care', 'tutoring':'Tutoring',
+  'beauty':'Beauty & Wellness', 'other':'Other'
+};
+const CAT_REVERSE = {};
+Object.entries(CAT_MAP).forEach(([k,v]) => CAT_REVERSE[v] = k);
+
+// ===== SOFIA DISTRICTS =====
+const SOFIA_DISTRICTS = {
+  'Средец': { color: '#ef4444', quarters: ['Център', 'Яворов', 'Цар Освободител'] },
+  'Оборище': { color: '#f97316', quarters: ['Оборище', 'Подуяне-център', 'Докторски паметник'] },
+  'Лозенец': { color: '#22c55e', quarters: ['Лозенец', 'Хладилника', 'Кръстова вада'] },
+  'Триадица': { color: '#14b8a6', quarters: ['Стрелбище', 'Гоце Делчев', 'Иван Вазов', 'Южен парк'] },
+  'Красно село': { color: '#3b82f6', quarters: ['Красно село', 'Лагера', 'Борово', 'Белите брези'] },
+  'Възраждане': { color: '#8b5cf6', quarters: ['Възраждане', 'Зона Б-5', 'Западен парк'] },
+  'Подуяне': { color: '#ec4899', quarters: ['Подуяне', 'Хаджи Димитър', 'Суха река', 'Левски'] },
+  'Сердика': { color: '#f59e0b', quarters: ['Сердика', 'Банишора', 'Орландовци'] },
+  'Слатина': { color: '#06b6d4', quarters: ['Слатина', 'Гео Милев', 'Редута'] },
+  'Изгрев': { color: '#84cc16', quarters: ['Изгрев', 'Изток', 'Диана бад'] },
+  'Илинден': { color: '#a855f7', quarters: ['Илинден', 'Захарна фабрика', 'Света Троица'] },
+  'Надежда': { color: '#f43f5e', quarters: ['Надежда 1', 'Надежда 2', 'Надежда 3', 'Надежда 4', 'Свобода', 'Толстой'] },
+  'Красна поляна': { color: '#0ea5e9', quarters: ['Красна поляна 1', 'Красна поляна 2', 'Красна поляна 3', 'Разсадника', 'Факултета'] },
+  'Искър': { color: '#10b981', quarters: ['Искър', 'Дружба 1', 'Дружба 2'] },
+  'Младост': { color: '#6366f1', quarters: ['Младост 1', 'Младост 1А', 'Младост 2', 'Младост 3', 'Младост 4', 'Полигона', 'Мусагеница'] },
+  'Студентски': { color: '#d946ef', quarters: ['Студентски град', 'Дървеница', 'Малинова долина'] },
+  'Витоша': { color: '#059669', quarters: ['Витоша', 'Бояна', 'Драгалевци', 'Симеоново', 'Кръстова вада'] },
+  'Овча купел': { color: '#dc2626', quarters: ['Овча купел 1', 'Овча купел 2', 'Горна баня'] },
+  'Люлин': { color: '#7c3aed', quarters: ['Люлин 1', 'Люлин 2', 'Люлин 3', 'Люлин 4', 'Люлин 5', 'Люлин 6', 'Люлин 7', 'Люлин 8', 'Люлин 9', 'Люлин 10', 'Филиповци'] },
+  'Връбница': { color: '#0891b2', quarters: ['Връбница 1', 'Връбница 2', 'Модерно предградие'] },
+  'Нови Искър': { color: '#65a30d', quarters: ['Нови Искър', 'Кубратово', 'Негован'] },
+  'Кремиковци': { color: '#ca8a04', quarters: ['Кремиковци', 'Ботунец', 'Сеславци'] },
+  'Панчарево': { color: '#be185d', quarters: ['Панчарево', 'Бистрица', 'Железница', 'Кокаляне'] },
+  'Банкя': { color: '#9333ea', quarters: ['Банкя', 'Иваняне', 'Клисура'] },
+};
+
+let selectedNeighborhoods = [];
+let tempSelectedNeighborhoods = [];
+
+const mockAds = [
+  { icon:"🔧", bg:"#fef3c7", title:"MasterFix Tools", desc:"Quality tools for every home job. 20% off this week!" },
+  { icon:"🧹", bg:"#d1fae5", title:"CleanPro Sofia", desc:"Professional cleaning supplies delivered to your door." },
+  { icon:"🚚", bg:"#dbeafe", title:"QuickMove BG", desc:"Need a van? Rent by the hour. Starting at €8/hr." },
+];
+
+// ===== AUTH =====
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+  if(tab === 'login') {
+    document.querySelectorAll('.auth-tab')[0].classList.add('active');
+    document.getElementById('form-login').classList.add('active');
+  } else {
+    document.querySelectorAll('.auth-tab')[1].classList.add('active');
+    document.getElementById('form-signup').classList.add('active');
+  }
+  document.getElementById('auth-error').classList.remove('show');
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+async function handleLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if(!email || !password) return showAuthError('Please fill in all fields');
+  document.getElementById('btn-login').disabled = true;
+  document.getElementById('btn-login').textContent = 'Signing in...';
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  document.getElementById('btn-login').disabled = false;
+  document.getElementById('btn-login').textContent = 'Sign In';
+  if(error) return showAuthError(error.message);
+}
+
+async function handleSignup() {
+  const name = document.getElementById('signup-name').value.trim();
+  const username = document.getElementById('signup-username').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  if(!name || !username || !email || !password) return showAuthError('Please fill in all fields');
+  if(password.length < 6) return showAuthError('Password must be at least 6 characters');
+  document.getElementById('btn-signup').disabled = true;
+  document.getElementById('btn-signup').textContent = 'Creating account...';
+  const { error } = await sb.auth.signUp({
+    email, password,
+    options: { data: { full_name: name, username: username } }
+  });
+  document.getElementById('btn-signup').disabled = false;
+  document.getElementById('btn-signup').textContent = 'Create Account';
+  if(error) return showAuthError(error.message);
+  showAuthError('');
+  showToast('Account created! Check your email to verify.');
+}
+
+async function handleGoogleAuth() {
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin }
+  });
+  if(error) showAuthError(error.message);
+}
+
+async function handleFacebookAuth() {
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'facebook',
+    options: { redirectTo: window.location.origin }
+  });
+  if(error) showAuthError(error.message);
+}
+
+// ===== AUTH GATING =====
+function requireAuth(onSuccess) {
+  if (currentUser) return true;
+  if (onSuccess) pendingAction = onSuccess;
+  showAuthModal();
+  return false;
+}
+
+function showAuthModal() {
+  document.getElementById('auth-screen-wrapper').classList.add('active');
+}
+
+function closeAuthModal() {
+  document.getElementById('auth-screen-wrapper').classList.remove('active');
+}
+
+function updateHeader() {
+  const authBtns = document.getElementById('header-auth-btns');
+  const userBtns = document.getElementById('header-user-btns');
+  if (currentUser) {
+    authBtns.style.display = 'none';
+    userBtns.style.display = 'flex';
+  } else {
+    authBtns.style.display = 'flex';
+    userBtns.style.display = 'none';
+  }
+  // Show/hide create-view guest overlay
+  const overlay = document.getElementById('create-guest-overlay');
+  if (overlay) overlay.style.display = currentUser ? 'none' : 'block';
+}
+
+async function handleSignOut() {
+  await sb.auth.signOut();
+  currentUser = null;
+  currentProfile = null;
+  updateHeader();
+  showView('home');
+}
+
+// ===== SESSION MANAGEMENT =====
+sb.auth.onAuthStateChange(async (event, session) => {
+  // INITIAL_SESSION is handled by the startup IIFE below; skip it here
+  if (event === 'INITIAL_SESSION') return;
+  if (session && session.user) {
+    currentUser = session.user;
+    await loadProfile();
+    updateHeader();
+    closeAuthModal();
+    initApp();
+    if (pendingAction) { const action = pendingAction; pendingAction = null; action(); }
+  } else {
+    currentUser = null;
+    currentProfile = null;
+    updateHeader();
+    showView('home');
+  }
+});
+
+async function loadProfile() {
+  if(!currentUser) return;
+  const { data } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+  currentProfile = data;
+  if(currentProfile) {
+    const initials = getInitials(currentProfile.full_name);
+    const avatar = document.querySelector('#header-user-btns .profile-avatar-sm');
+    if(avatar) avatar.textContent = initials;
+  }
+}
+
+// ===== RENDER HELPERS =====
+function getInitials(name) {
+  if(!name) return '?';
+  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+}
+
+function getColor(id) {
+  if(!id) return colors[0];
+  let hash = 0;
+  for(let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
+}
+
+function getTrust(level) { return TRUST_MAP[level] || TRUST_MAP['new']; }
+
+function renderStars(r) {
+  r = parseFloat(r) || 0;
+  const full = Math.floor(r);
+  let s = '';
+  for(let i=0;i<full;i++) s+='★';
+  if(r % 1 >= 0.5) s+='★';
+  return `<span class="stars">${s}</span> <span style="color:var(--text-muted)">${r.toFixed(1)}</span>`;
+}
+
+function renderTrustBadge(trust) {
+  if(!trust) return '';
+  return `<span class="trust-badge ${trust.badge}">${trust.label}</span>`;
+}
+
+function renderTrustDots(trust) {
+  if(!trust) return '';
+  let dots = '';
+  for(let i=0;i<5;i++) {
+    const cls = i < trust.dots ? (trust.dots >= 5 ? 'filled gold' : 'filled') : '';
+    dots += `<span class="level-dot ${cls}"></span>`;
+  }
+  return `<div class="trust-level"><div class="level-bar">${dots}</div></div>`;
+}
+
+function renderPayBadge(method) {
+  if(method === 'escrow') return `<span class="bidding-badge escrow-badge">🔒 Escrow</span>`;
+  return `<span class="bidding-badge cash-badge">💵 Cash</span>`;
+}
+
+function timeLeft(endDate) {
+  const diff = new Date(endDate) - new Date();
+  if(diff <= 0) return 'Ended';
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  if(h > 24) return Math.floor(h/24) + 'd ' + (h%24) + 'h';
+  if(h > 0) return h + 'h ' + m + 'm';
+  return m + 'm';
+}
+
+function formatDate(d) {
+  const date = new Date(d);
+  const now = new Date();
+  const diff = now - date;
+  if(diff < 60000) return 'Just now';
+  if(diff < 3600000) return Math.floor(diff/60000) + 'm ago';
+  if(diff < 86400000) return date.getHours().toString().padStart(2,'0') + ':' + date.getMinutes().toString().padStart(2,'0');
+  if(diff < 172800000) return 'Yesterday';
+  return date.toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+}
+
+// ===== RENDER TASK CARDS =====
+async function renderTaskCards() {
+  const grid = document.getElementById('tasks-grid');
+  grid.innerHTML = '<div class="loading-spinner">Loading tasks...</div>';
+
+  let query = sb.from('tasks').select('*, poster:profiles!poster_id(id, full_name, avatar_url, rating_avg, rating_count, trust_level)').eq('status', 'open').order('created_at', { ascending: false }).limit(30);
+
+  // Apply category filter
+  const activeCat = document.querySelector('.cat-chip.active');
+  if(activeCat && activeCat.textContent !== 'All') {
+    const catVal = CAT_REVERSE[activeCat.textContent];
+    if(catVal) query = query.eq('category', catVal);
+  }
+
+  const { data: tasks, error } = await query;
+
+  if(error || !tasks) {
+    grid.innerHTML = '<div class="empty-state"><div class="icon">😕</div><p>Could not load tasks</p></div>';
+    return;
+  }
+
+  if(tasks.length === 0) {
+    grid.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>No tasks yet. Be the first to post one!</p></div>';
+    document.getElementById('task-count').textContent = '0 tasks';
+    return;
+  }
+
+  // Apply all filters
+  let filtered = tasks;
+
+  // Keyword search
+  const keyword = (document.getElementById('search-keyword')?.value || '').toLowerCase().trim();
+  if (keyword) {
+    filtered = filtered.filter(t =>
+      (t.title && t.title.toLowerCase().includes(keyword)) ||
+      (t.description && t.description.toLowerCase().includes(keyword)) ||
+      (t.location && t.location.toLowerCase().includes(keyword))
+    );
+  }
+
+  // Neighborhood filter
+  if (selectedNeighborhoods.length > 0) {
+    filtered = filtered.filter(t => {
+      if (!t.location) return false;
+      return selectedNeighborhoods.some(n => t.location.includes(n));
+    });
+  }
+
+  // Time remaining filter
+  const timeFilter = document.getElementById('filter-time')?.value;
+  if (timeFilter) {
+    const hoursLeft = parseInt(timeFilter);
+    const cutoff = new Date(Date.now() + hoursLeft * 60 * 60 * 1000);
+    filtered = filtered.filter(t => {
+      if (!t.bidding_ends_at) return false;
+      const ends = new Date(t.bidding_ends_at);
+      return ends > new Date() && ends <= cutoff;
+    });
+  }
+
+  // Update task count text
+  let countParts = [];
+  if (selectedNeighborhoods.length > 0) {
+    const names = selectedNeighborhoods.length <= 2 ? selectedNeighborhoods.join(', ') : selectedNeighborhoods.slice(0, 2).join(', ') + ' +' + (selectedNeighborhoods.length - 2);
+    countParts.push('в ' + names);
+  }
+  if (keyword) countParts.push('"' + keyword + '"');
+  if (timeFilter) countParts.push('до ' + timeFilter + 'ч');
+  document.getElementById('task-count').textContent = filtered.length + ' задачи' + (countParts.length ? ' · ' + countParts.join(' · ') : ' наблизо');
+
+  if (filtered.length === 0 && tasks.length > 0) {
+    grid.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><p>Няма намерени задачи с тези филтри</p></div>';
+    return;
+  }
+
+  let html = '';
+
+  filtered.forEach((t, idx) => {
+    if(idx > 0 && idx % 3 === 0) {
+      const ad = mockAds[(idx/3 - 1) % mockAds.length];
+      html += `<div class="ad-banner"><span class="ad-tag">Sponsored</span><div class="ad-icon" style="background:${ad.bg}">${ad.icon}</div><div class="ad-content"><h4>${ad.title}</h4><p>${ad.desc}</p></div></div>`;
+    }
+
+    const poster = t.poster || {};
+    const trust = getTrust(poster.trust_level);
+    const initials = getInitials(poster.full_name);
+    const color = getColor(poster.id);
+    const tl = timeLeft(t.bidding_ends_at);
+    const catDisplay = CAT_MAP[t.category] || t.category;
+
+    html += `
+      <div class="task-card" onclick="openTask('${t.id}')">
+        <div class="task-card-top">
+          <span class="task-cat-tag">${catDisplay}</span>
+          <div class="task-price-wrap">
+            <div class="task-price">€${parseFloat(t.price).toFixed(0)}</div>
+            <div class="task-payment-type">${t.payment_method === 'escrow' ? '🔒 Escrow' : '💵 Cash'}</div>
+          </div>
+        </div>
+        <h3>${t.title}</h3>
+        <p class="desc">${t.description}</p>
+        <div class="task-card-footer">
+          <div class="task-poster">
+            <div class="avatar" style="background:${color}">
+              ${trust === TRUST_MAP['premium'] ? '<span class="premium-ring"></span>' : ''}
+              ${initials}
+            </div>
+            <div class="poster-info">
+              <div class="name">${poster.full_name || 'User'} ${renderTrustBadge(trust)}</div>
+              <div class="rating">${renderStars(poster.rating_avg)}</div>
+            </div>
+          </div>
+          <div class="task-meta">
+            ${t.location ? '<span class="task-location-tag">📍 ' + t.location.split(',')[0] + '</span>' : ''}
+            <span class="meta-item"><span class="countdown ${tl !== 'Ended' && parseInt(tl) > 2 ? 'ok' : ''}"><span class="dot"></span> ${tl}</span></span>
+            <span class="meta-item">${t.bid_count || 0} bids</span>
+          </div>
+        </div>
+      </div>`;
+  });
+
+  grid.innerHTML = html;
+}
+
+async function openTask(id) {
+  const { data: t, error } = await sb.from('tasks').select('*, poster:profiles!poster_id(id, full_name, avatar_url, rating_avg, rating_count, trust_level, tasks_completed)').eq('id', id).single();
+  if(error || !t) return showToast('Task not found');
+  currentTask = t;
+
+  const poster = t.poster || {};
+  const trust = getTrust(poster.trust_level);
+  const initials = getInitials(poster.full_name);
+  const color = getColor(poster.id);
+  const tl = timeLeft(t.bidding_ends_at);
+  const catDisplay = CAT_MAP[t.category] || t.category;
+  const isOwner = currentUser && t.poster_id === currentUser.id;
+
+  document.getElementById('detail-content').innerHTML = `
+    <span class="detail-cat-badge">${catDisplay}</span>
+    <h1>${t.title}</h1>
+    <div class="detail-price-row">
+      <span class="detail-price">€${parseFloat(t.price).toFixed(0)}</span>
+      <span class="bidding-badge ${t.bidding_type==='price'?'price-bid':'fixed-price'}">${t.bidding_type==='price'?'Price Bidding':'Fixed Price'}</span>
+      ${renderPayBadge(t.payment_method)}
+    </div>`;
+
+  const payInfo = t.payment_method === 'escrow'
+    ? `<div class="payment-info-box"><div class="pay-icon escrow-icon">🔒</div><div class="pay-details"><h5>Escrow Protected</h5><p>Payment held securely. Released to doer after task completion.</p></div></div>`
+    : `<div class="payment-info-box"><div class="pay-icon cash-icon">💵</div><div class="pay-details"><h5>Cash Payment</h5><p>Pay the doer directly in cash when the task is completed.</p></div></div>`;
+
+  document.getElementById('detail-body').innerHTML = `
+    <p class="detail-desc">${t.description}</p>
+    ${payInfo}
+    <div class="detail-info-grid">
+      <div class="info-card"><div class="label">Time Left</div><div class="value"><span class="countdown ${tl !== 'Ended' && parseInt(tl) > 2 ? 'ok' : ''}"><span class="dot"></span> ${tl}</span></div></div>
+      <div class="info-card"><div class="label">Location</div><div class="value">${t.location || 'Not specified'}</div></div>
+      <div class="info-card"><div class="label">Total Bids</div><div class="value">${t.bid_count || 0} bids</div></div>
+      <div class="info-card"><div class="label">Bidding Type</div><div class="value">${t.bidding_type==='price'?'Open Bidding':'Fixed Price'}</div></div>
+    </div>
+    <div class="detail-poster-card">
+      <div class="avatar" style="background:${color};width:40px;height:40px;font-size:15px">
+        ${trust === TRUST_MAP['premium'] ? '<span class="premium-ring"></span>' : ''}
+        ${initials}
+      </div>
+      <div class="info">
+        <h4>${poster.full_name || 'User'} ${renderTrustBadge(trust)}</h4>
+        <div class="rating">${renderStars(poster.rating_avg)}</div>
+        <div class="tasks-done">${poster.tasks_completed || 0} tasks completed ${renderTrustDots(trust)}</div>
+      </div>
+    </div>`;
+
+  // Load bids
+  const { data: bids } = await sb.from('bids').select('*, bidder:profiles!bidder_id(id, full_name, avatar_url, rating_avg, rating_count, trust_level)').eq('task_id', id).order('created_at', { ascending: true });
+
+  const bidsSection = document.getElementById('bids-section');
+  if(bids && bids.length > 0) {
+    bidsSection.innerHTML = `<h3>Bids (${bids.length})</h3>` + bids.map(b => {
+      const bt = getTrust(b.bidder?.trust_level);
+      const bi = getInitials(b.bidder?.full_name);
+      const bc = getColor(b.bidder?.id);
+      return `<div class="bid-card">
+        <div class="avatar" style="background:${bc};width:36px;height:36px;font-size:13px">${bt === TRUST_MAP['premium'] ? '<span class="premium-ring"></span>' : ''}${bi}</div>
+        <div class="bid-info">
+          <div class="bid-header"><span class="name">${b.bidder?.full_name || 'User'} ${renderTrustBadge(bt)}</span><span class="bid-price">€${parseFloat(b.amount || t.price).toFixed(0)}</span></div>
+          <div class="rating">${renderStars(b.bidder?.rating_avg)} ${renderTrustDots(bt)}</div>
+          <div class="bid-msg">${b.message || ''}</div>
+          ${isOwner && b.status === 'pending' ? `<button class="select-bid-btn" onclick="selectBid('${b.id}', event)">Select ${(b.bidder?.full_name || 'User').split(' ')[0]}</button>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  } else {
+    bidsSection.innerHTML = '<h3>Bids</h3><div class="empty-state"><div class="icon">🤷</div><p>No bids yet. Be the first!</p></div>';
+  }
+
+  // Don't show bid button if owner or already bid
+  const alreadyBid = bids && bids.some(b => b.bidder_id === currentUser?.id);
+  document.getElementById('bid-sticky').style.display = (isOwner || alreadyBid || tl === 'Ended') ? 'none' : 'block';
+  showView('detail');
+}
+
+// ===== MODALS & ACTIONS =====
+function openBidModal() {
+  if (!requireAuth()) return;
+  const modal = document.getElementById('bid-modal');
+  const priceGroup = document.getElementById('bid-price-group');
+  if(currentTask && currentTask.bidding_type === 'fixed') {
+    priceGroup.style.display = 'none';
+    document.getElementById('bid-modal-title').textContent = `Apply for €${parseFloat(currentTask.price).toFixed(0)}`;
+  } else {
+    priceGroup.style.display = 'block';
+    document.getElementById('bid-modal-title').textContent = 'Place Your Bid';
+  }
+  document.getElementById('bid-price-input').value = '';
+  document.getElementById('bid-message-input').value = '';
+  modal.classList.add('active');
+}
+
+function closeBidModal() { document.getElementById('bid-modal').classList.remove('active'); }
+
+async function submitBid() {
+  if(!currentTask || !currentUser) return;
+  const amount = currentTask.bidding_type === 'fixed' ? currentTask.price : parseFloat(document.getElementById('bid-price-input').value);
+  const message = document.getElementById('bid-message-input').value.trim();
+
+  if(currentTask.bidding_type === 'price' && (!amount || amount <= 0)) return showToast('Please enter a valid price');
+
+  const { error } = await sb.from('bids').insert({
+    task_id: currentTask.id,
+    bidder_id: currentUser.id,
+    amount: amount,
+    message: message
+  });
+
+  if(error) {
+    if(error.message.includes('duplicate')) return showToast('You already bid on this task');
+    return showToast('Error: ' + error.message);
+  }
+
+  closeBidModal();
+  showToast('Bid submitted successfully!');
+  openTask(currentTask.id);
+}
+
+async function selectBid(bidId, e) {
+  e.stopPropagation();
+  if(!currentTask || !currentUser) return;
+
+  const { data: bid } = await sb.from('bids').select('*').eq('id', bidId).single();
+  if(!bid) return showToast('Bid not found');
+
+  // Update task
+  await sb.from('tasks').update({ status: 'in_progress', selected_bid_id: bidId, selected_doer_id: bid.bidder_id }).eq('id', currentTask.id);
+  // Update bid statuses
+  await sb.from('bids').update({ status: 'selected' }).eq('id', bidId);
+  await sb.from('bids').update({ status: 'rejected' }).eq('task_id', currentTask.id).neq('id', bidId);
+  // Create conversation
+  await sb.from('conversations').upsert({
+    task_id: currentTask.id,
+    poster_id: currentTask.poster_id,
+    doer_id: bid.bidder_id,
+    is_unlocked: true,
+    agreed_price: bid.amount || currentTask.price
+  }, { onConflict: 'task_id,poster_id,doer_id' });
+
+  showToast('Bidder selected! Chat unlocked.');
+  openTask(currentTask.id);
+}
+
+// ===== MY TASKS =====
+async function renderMyTasks() {
+  if(!currentUser) return;
+
+  // Posted tasks
+  const { data: posted } = await sb.from('tasks').select('*, selected_doer:profiles!selected_doer_id(full_name)').eq('poster_id', currentUser.id).order('created_at', { ascending: false });
+
+  const postedEl = document.getElementById('posted-tasks');
+  if(posted && posted.length > 0) {
+    postedEl.innerHTML = posted.map(t => {
+      const st = t.status.replace('_', '-');
+      const tl = timeLeft(t.bidding_ends_at);
+      const catDisplay = CAT_MAP[t.category] || t.category;
+      return `<div class="my-task-card" onclick="openTask('${t.id}')">
+        <div class="my-task-top"><h4>${t.title}</h4><span class="status-badge ${st}">${st.replace('-',' ')}</span></div>
+        <div class="my-task-meta">
+          <span>€${parseFloat(t.price).toFixed(0)}</span>
+          <span>${t.payment_method === 'escrow' ? '🔒 Escrow' : '💵 Cash'}</span>
+          <span>${catDisplay}</span>
+          ${t.status==='open' ? `<span>${t.bid_count || 0} bids · ${tl} left</span>` : ''}
+          ${t.status==='in_progress' ? `<span>Doer: ${t.selected_doer?.full_name || 'Selected'}</span>` : ''}
+          ${t.status==='completed' ? `<span>Done by: ${t.selected_doer?.full_name || 'User'}</span>` : ''}
+        </div>
+        ${t.status==='in_progress' ? `<button class="mark-complete-btn" onclick="event.stopPropagation();completeTask('${t.id}')">✓ Mark as Complete</button>` : ''}
+        ${t.status==='completed' ? '<div style="margin-top:8px;font-size:12px;color:var(--warning)">★★★★★ Rated</div>' : ''}
+      </div>`;
+    }).join('');
+  } else {
+    postedEl.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>No posted tasks yet</p></div>';
+  }
+
+  // Bidding on
+  const { data: myBids } = await sb.from('bids').select('*, task:tasks(id, title, price, category, status, poster:profiles!poster_id(full_name))').eq('bidder_id', currentUser.id).order('created_at', { ascending: false });
+
+  const biddingEl = document.getElementById('bidding-tasks');
+  if(myBids && myBids.length > 0) {
+    biddingEl.innerHTML = myBids.map(b => {
+      const st = b.status === 'pending' ? 'pending' : b.status === 'selected' ? 'selected' : 'not-selected';
+      const catDisplay = CAT_MAP[b.task?.category] || b.task?.category || '';
+      return `<div class="my-task-card" onclick="openTask('${b.task?.id}')">
+        <div class="my-task-top"><h4>${b.task?.title || 'Task'}</h4><span class="status-badge ${st}">${st.replace('-',' ')}</span></div>
+        <div class="my-task-meta">
+          <span>Your bid: €${parseFloat(b.amount || 0).toFixed(0)}</span>
+          <span>By: ${b.task?.poster?.full_name || 'User'}</span>
+          <span>${catDisplay}</span>
+        </div>
+      </div>`;
+    }).join('');
+  } else {
+    biddingEl.innerHTML = '<div class="empty-state"><div class="icon">🙋</div><p>No bids placed yet</p></div>';
+  }
+}
+
+function switchMyTab(btn, tab) {
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('posted-tasks').style.display = tab==='posted'?'flex':'none';
+  document.getElementById('bidding-tasks').style.display = tab==='bidding'?'flex':'none';
+}
+
+async function completeTask(id) {
+  const { error } = await sb.from('tasks').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', id);
+  if(error) return showToast('Error: ' + error.message);
+  showToast('Task marked as complete!');
+  renderMyTasks();
+}
+
+// ===== MESSAGES =====
+async function renderChats() {
+  if(!currentUser) return;
+  const chatList = document.getElementById('chat-list');
+  chatList.innerHTML = '<div class="loading-spinner">Loading...</div>';
+
+  const { data: convos } = await sb.from('conversations').select('*, task:tasks(id, title, price, status), poster:profiles!poster_id(id, full_name, avatar_url, trust_level), doer:profiles!doer_id(id, full_name, avatar_url, trust_level)').or(`poster_id.eq.${currentUser.id},doer_id.eq.${currentUser.id}`).order('last_message_at', { ascending: false, nullsFirst: false });
+
+  if(!convos || convos.length === 0) {
+    chatList.innerHTML = '<div class="empty-state"><div class="icon">💬</div><p>No conversations yet. They appear when a bidder is selected.</p></div>';
+    return;
+  }
+
+  let html = '';
+  for(const c of convos) {
+    const other = c.poster_id === currentUser.id ? c.doer : c.poster;
+    const initials = getInitials(other?.full_name);
+    const color = getColor(other?.id);
+
+    if(!c.is_unlocked) {
+      html += `<div class="chat-item" style="opacity:0.5" onclick="openLockedChat('${other?.full_name || 'User'}', '${color}', '${initials}')">
+        <div class="avatar" style="background:${color};width:44px;height:44px;font-size:15px">${initials}</div>
+        <div class="chat-info"><div class="chat-name">${other?.full_name || 'User'}</div><div class="chat-task">${c.task?.title || 'Task'}</div><div class="chat-preview">🔒 Waiting for bid selection...</div></div>
+      </div>`;
+      continue;
+    }
+
+    // Get last message
+    const { data: lastMsgs } = await sb.from('messages').select('content, created_at, sender_id').eq('conversation_id', c.id).order('created_at', { ascending: false }).limit(1);
+    const lastMsg = lastMsgs?.[0];
+    const unreadRes = await sb.from('messages').select('id', { count: 'exact', head: true }).eq('conversation_id', c.id).neq('sender_id', currentUser.id).eq('is_read', false);
+
+    html += `<div class="chat-item" onclick="openChat('${c.id}')">
+      <div class="avatar" style="background:${color};width:44px;height:44px;font-size:15px">${initials}</div>
+      <div class="chat-info"><div class="chat-name">${other?.full_name || 'User'}</div><div class="chat-task">${c.task?.title || 'Task'} · €${parseFloat(c.agreed_price || c.task?.price || 0).toFixed(0)}</div><div class="chat-preview">${lastMsg?.content || 'Start chatting...'}</div></div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <span class="chat-time">${lastMsg ? formatDate(lastMsg.created_at) : ''}</span>
+        ${(unreadRes?.count || 0) > 0 ? '<span class="unread-dot"></span>' : ''}
+      </div>
+    </div>`;
+  }
+  chatList.innerHTML = html;
+}
+
+function openLockedChat(name, color, initials) {
+  const conv = document.getElementById('chat-conversation');
+  document.getElementById('messages-list-view').style.display = 'none';
+  conv.className = 'chat-view active';
+  conv.innerHTML = `
+    <div class="chat-conv-header">
+      <button class="back-btn" onclick="closeChat()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back</button>
+      <div class="avatar" style="background:${color};width:32px;height:32px;font-size:12px">${initials}</div>
+      <span style="font-weight:600;font-size:14px">${name}</span>
+    </div>
+    <div class="locked-chat"><div class="lock-icon">🔒</div><h3>Chat Locked</h3><p>Chat will be available once a bidder is selected for this task.</p></div>`;
+}
+
+async function openChat(convId) {
+  currentConvId = convId;
+  const { data: conv } = await sb.from('conversations').select('*, task:tasks(id, title, price), poster:profiles!poster_id(id, full_name), doer:profiles!doer_id(id, full_name)').eq('id', convId).single();
+  if(!conv) return;
+
+  const other = conv.poster_id === currentUser.id ? conv.doer : conv.poster;
+  const initials = getInitials(other?.full_name);
+  const color = getColor(other?.id);
+
+  const { data: messages } = await sb.from('messages').select('*').eq('conversation_id', convId).order('created_at', { ascending: true });
+
+  // Mark as read
+  await sb.from('messages').update({ is_read: true }).eq('conversation_id', convId).neq('sender_id', currentUser.id).eq('is_read', false);
+
+  const convEl = document.getElementById('chat-conversation');
+  document.getElementById('messages-list-view').style.display = 'none';
+  convEl.className = 'chat-view active';
+  convEl.innerHTML = `
+    <div class="chat-conv-header">
+      <button class="back-btn" onclick="closeChat()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back</button>
+      <div class="avatar" style="background:${color};width:32px;height:32px;font-size:12px">${initials}</div>
+      <span style="font-weight:600;font-size:14px">${other?.full_name || 'User'}</span>
+    </div>
+    <div class="chat-task-ref"><span class="task-title">${conv.task?.title || 'Task'}</span><span class="task-price-sm">€${parseFloat(conv.agreed_price || conv.task?.price || 0).toFixed(0)}</span></div>
+    <div class="chat-messages">
+      ${(messages || []).map(m => `<div><div class="msg-bubble ${m.sender_id === currentUser.id ? 'sent' : 'received'}">${m.content}</div><div class="msg-time ${m.sender_id === currentUser.id ? '' : 'left'}">${formatDate(m.created_at)}</div></div>`).join('')}
+    </div>
+    <div class="chat-input-bar">
+      <input type="text" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMessage(this)">
+      <button class="send-btn" onclick="sendMessage(this.previousElementSibling)"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+    </div>`;
+  const msgsEl = convEl.querySelector('.chat-messages');
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+
+async function sendMessage(input) {
+  const text = input.value.trim();
+  if(!text || !currentConvId || !currentUser) return;
+
+  const { error } = await sb.from('messages').insert({ conversation_id: currentConvId, sender_id: currentUser.id, content: text });
+  if(error) return showToast('Failed to send');
+
+  await sb.from('conversations').update({ last_message_at: new Date().toISOString() }).eq('id', currentConvId);
+
+  const msgs = document.querySelector('.chat-messages');
+  const now = new Date();
+  const time = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  msgs.innerHTML += `<div><div class="msg-bubble sent">${text}</div><div class="msg-time">${time}</div></div>`;
+  input.value = '';
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function closeChat() {
+  currentConvId = null;
+  document.getElementById('chat-conversation').className = 'chat-view';
+  document.getElementById('messages-list-view').style.display = 'block';
+}
+
+// ===== WALLET =====
+async function renderWallet() {
+  const content = document.getElementById('wallet-content');
+
+  const cashView = `
+    <div class="cash-wallet-msg"><div class="cash-icon">💵</div><h3>Cash Payments</h3><p>Tasks on QuickTask are currently paid in cash directly between poster and doer. Simple, no fees.</p></div>
+    <div class="cash-tips">
+      <div class="cash-tip"><span class="tip-icon">🤝</span><div class="tip-text"><strong>Meet in person</strong> — agree on exact amount before starting the task.</div></div>
+      <div class="cash-tip"><span class="tip-icon">⭐</span><div class="tip-text"><strong>Rate after payment</strong> — leave a review to help the community.</div></div>
+      <div class="cash-tip"><span class="tip-icon">🛡️</span><div class="tip-text"><strong>Check trust level</strong> — work with Trusted or Premium users for safety.</div></div>
+      <div class="cash-tip"><span class="tip-icon">📱</span><div class="tip-text"><strong>Use messages</strong> — confirm details and payment method before meeting.</div></div>
+    </div>
+    <div style="padding:0 16px"><div class="escrow-info"><span class="info-icon">🔒</span><p><strong>Escrow payments coming soon!</strong> We're working on secure online payments where money is held until the task is complete. Stay tuned.</p></div></div>
+    <div class="ad-banner" style="margin:16px"><span class="ad-tag">Sponsored</span><div class="ad-icon" style="background:#dbeafe">🏦</div><div class="ad-content"><h4>Revolut Bulgaria</h4><p>Send money instantly. Get your free card today.</p></div></div>`;
+
+  let escrowView = cashView;
+  if(currentProfile) {
+    const avail = parseFloat(currentProfile.wallet_balance || 0);
+    const held = parseFloat(currentProfile.wallet_held || 0);
+    const total = avail + held;
+
+    const { data: txns } = await sb.from('transactions').select('*, task:tasks(title)').eq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(20);
+
+    escrowView = `
+      <div class="wallet-header-card">
+        <div class="wallet-label">Total Balance</div><div class="wallet-total">€${total.toFixed(2)}</div>
+        <div class="wallet-breakdown">
+          <div class="wallet-sub"><div class="sub-label">Available</div><div class="sub-value">€${avail.toFixed(2)}</div></div>
+          <div class="wallet-sub"><div class="sub-label">Held for tasks</div><div class="sub-value">€${held.toFixed(2)}</div></div>
+        </div>
+      </div>
+      <button class="add-funds-btn" onclick="showToast('Add Funds coming soon!')"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg> Add Funds</button>
+      <div class="escrow-info"><span class="info-icon">🔒</span><p>Payment is held securely when you post a task. The doer receives payment only after you confirm the task is complete.</p></div>
+      <div class="tx-section"><h3>Transactions</h3><div class="tx-list">
+        ${(txns || []).map(t => {
+          const icons = { deposit:'💳', held:'🔒', released:'✓', received:'💰', withdrawal:'💸', refund:'↩️' };
+          const isPositive = ['deposit','received','refund'].includes(t.type);
+          const amtStr = (isPositive ? '+' : '-') + '€' + Math.abs(parseFloat(t.amount)).toFixed(2);
+          let amountClass = isPositive ? 'positive' : 'negative';
+          if(t.type === 'held') amountClass = 'pending-tx';
+          const statusLabels = { held:'Held', released:'Released', received:'Received' };
+          const statusClasses = { held:'held-s', released:'released-s', received:'received-s' };
+          return `<div class="tx-item"><div class="tx-icon ${t.type}">${icons[t.type] || '📄'}</div><div class="tx-details"><div class="tx-title">${t.description || t.type}</div><div class="tx-date">${formatDate(t.created_at)}</div></div><div style="text-align:right"><div class="tx-amount ${amountClass}">${amtStr}</div>${statusLabels[t.type] ? `<div class="tx-status ${statusClasses[t.type] || ''}">${statusLabels[t.type]}</div>` : ''}</div></div>`;
+        }).join('') || '<div class="empty-state"><p>No transactions yet</p></div>'}
+      </div></div>`;
+  }
+
+  content.innerHTML = `
+    <div class="payment-mode-bar">
+      <button class="payment-mode-btn ${paymentMode==='cash'?'active':''}" onclick="switchPaymentMode('cash')">💵 Cash Mode</button>
+      <button class="payment-mode-btn ${paymentMode==='escrow'?'active':''}" onclick="switchPaymentMode('escrow')">🔒 Escrow Mode</button>
+    </div>
+    ${paymentMode === 'cash' ? cashView : escrowView}`;
+}
+
+function switchPaymentMode(mode) {
+  paymentMode = mode;
+  renderWallet();
+}
+
+// ===== PROFILE =====
+async function renderProfile() {
+  if(!currentProfile) await loadProfile();
+  if(!currentProfile) return;
+  const p = currentProfile;
+  const trust = getTrust(p.trust_level);
+  const initials = getInitials(p.full_name);
+  const memberDate = new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+  const profileCard = document.querySelector('#view-profile .profile-card');
+  profileCard.innerHTML = `
+    <div class="profile-avatar">${initials}</div>
+    <h3>${p.full_name}</h3>
+    <div class="member-since">Member since ${memberDate}</div>
+    <div style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap">
+      ${p.phone_verified ? '<span class="trust-badge verified">✓ Phone Verified</span>' : ''}
+      ${p.email_verified ? '<span class="trust-badge verified">✓ Email Verified</span>' : ''}
+      ${renderTrustBadge(trust)}
+    </div>
+    <div class="trust-summary">
+      <div class="trust-stat"><div class="stat-value">${parseFloat(p.rating_avg || 0).toFixed(1)}</div><div class="stat-label">Rating</div></div>
+      <div class="trust-stat"><div class="stat-value">${p.tasks_completed || 0}</div><div class="stat-label">Tasks Done</div></div>
+      <div class="trust-stat"><div class="stat-value">${p.tasks_posted || 0}</div><div class="stat-label">Posted</div></div>
+    </div>`;
+
+  const progressCard = document.querySelector('#view-profile .trust-progress-card');
+  const checks = [
+    { done: p.email_verified, text: 'Email verified' },
+    { done: p.phone_verified, text: 'Phone verified' },
+    { done: (p.tasks_completed || 0) >= 5, text: '5+ tasks completed' },
+    { done: (p.rating_avg || 0) >= 4.5, text: '4.5+ star rating' },
+    { done: (p.tasks_completed || 0) >= 20, text: '20+ tasks completed' },
+    { done: p.is_premium, text: 'Premium member' }
+  ];
+  progressCard.innerHTML = '<h4>🛡️ Trust Level Progress</h4>' + checks.map(c => `
+    <div class="progress-item">
+      <div class="check ${c.done ? 'done' : 'pending'}">${c.done ? '✓' : '○'}</div>
+      <span class="prog-text ${c.done ? 'completed' : ''}">${c.text}</span>
+    </div>`).join('');
+}
+
+// ===== CREATE TASK =====
+function toggleBidType(btn, type) {
+  document.querySelectorAll('.toggle-opt').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('price-label').textContent = type==='fixed' ? 'Price (€)' : 'Suggested Budget (€)';
+}
+
+function selectPayMethod(el, method) {
+  if(el.classList.contains('disabled')) return;
+  document.querySelectorAll('.pay-method-card').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function previewTask() {
+  if (!requireAuth(() => showView('create'))) return;
+  const title = document.getElementById('create-title').value || 'Fix broken lamp';
+  const desc = document.getElementById('create-desc').value || 'The lamp in my living room stopped working. Need someone to check and fix it.';
+  const price = document.getElementById('create-price').value || '5';
+  const cat = document.getElementById('create-cat').value || 'Home Repair';
+  const neighborhood = document.getElementById('create-neighborhood').value;
+  const address = document.getElementById('create-address').value.trim();
+  const loc = neighborhood ? (neighborhood + (address ? ', ' + address : '')) : address;
+  const preview = document.getElementById('preview-card');
+  document.getElementById('preview-content').innerHTML = `
+    <div class="task-card" style="cursor:default;">
+      <div class="task-card-top"><span class="task-cat-tag">${cat}</span>
+        <div class="task-price-wrap"><div class="task-price">€${parseFloat(price).toFixed(0)}</div><div class="task-payment-type">💵 Cash</div></div>
+      </div>
+      <h3 style="margin-bottom:6px;">${title}</h3>
+      <p class="desc">${desc}</p>
+      ${loc ? '<div style="margin-top:8px"><span class="task-location-tag">📍 ' + loc + '</span></div>' : ''}
+    </div>`;
+  preview.classList.add('show');
+}
+
+async function postTask() {
+  if (!requireAuth(() => showView('create'))) return;
+  const title = document.getElementById('create-title').value.trim();
+  const desc = document.getElementById('create-desc').value.trim();
+  const price = parseFloat(document.getElementById('create-price').value);
+  const catDisplay = document.getElementById('create-cat').value;
+  const category = CAT_REVERSE[catDisplay];
+  const durationText = document.getElementById('create-duration').value;
+  const selectionText = document.getElementById('create-selection').value;
+  const neighborhood = document.getElementById('create-neighborhood').value;
+  const address = document.getElementById('create-address').value.trim();
+  const location = neighborhood ? (neighborhood + (address ? ', ' + address : '')) : address;
+  const bidType = document.querySelector('.toggle-opt.active')?.textContent.includes('propose') ? 'price' : 'fixed';
+
+  if(!title || !desc || !price || !category) return showToast('Please fill in all required fields');
+
+  const durationHours = parseInt(durationText) || 6;
+  const selectionHours = parseInt(selectionText) || 3;
+  const biddingEndsAt = new Date(Date.now() + durationHours * 3600000).toISOString();
+
+  const { error } = await sb.from('tasks').insert({
+    poster_id: currentUser.id,
+    title, description: desc, category, price,
+    bidding_type: bidType,
+    payment_method: 'cash',
+    location,
+    bidding_duration_hours: durationHours,
+    selection_duration_hours: selectionHours,
+    bidding_ends_at: biddingEndsAt
+  });
+
+  if(error) return showToast('Error: ' + error.message);
+
+  document.getElementById('preview-card').classList.remove('show');
+  document.getElementById('create-title').value = '';
+  document.getElementById('create-desc').value = '';
+  document.getElementById('create-price').value = '';
+  document.getElementById('create-neighborhood').value = '';
+  document.getElementById('create-address').value = '';
+  showToast('Task posted! Bidding is now open.');
+  setTimeout(() => { showView('home'); renderTaskCards(); }, 1200);
+}
+
+// ===== NEIGHBORHOOD PICKER =====
+function buildNeighborhoodList(filter = '') {
+  const container = document.getElementById('neighborhood-list');
+  let html = '';
+  const lf = filter.toLowerCase();
+
+  Object.entries(SOFIA_DISTRICTS).forEach(([district, data]) => {
+    const matchingQuarters = data.quarters.filter(q => !lf || q.toLowerCase().includes(lf) || district.toLowerCase().includes(lf));
+    if (matchingQuarters.length === 0 && lf) return;
+    const quarters = lf ? matchingQuarters : data.quarters;
+    const expanded = lf ? true : false;
+
+    html += `<div class="district-group${expanded ? ' expanded' : ''}">
+      <div class="district-header" onclick="toggleDistrict(this)">
+        <div class="district-dot" style="background:${data.color}"></div>
+        <span class="district-name">${district}</span>
+        <span class="district-arrow">▼</span>
+      </div>
+      <div class="district-quarters">`;
+
+    quarters.forEach(q => {
+      const checked = tempSelectedNeighborhoods.includes(q) ? 'checked' : '';
+      html += `<div class="quarter-item">
+        <input type="checkbox" id="q-${q.replace(/\s+/g, '-')}" value="${q}" ${checked} onchange="toggleQuarter(this)">
+        <label for="q-${q.replace(/\s+/g, '-')}">${q}</label>
+      </div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  container.innerHTML = html;
+}
+
+function toggleDistrict(header) {
+  const group = header.parentElement;
+  const wasExpanded = group.classList.contains('expanded');
+  group.classList.toggle('expanded');
+
+  // If clicking district name, select/deselect all quarters
+  if (wasExpanded) return;
+}
+
+function toggleQuarter(checkbox) {
+  const val = checkbox.value;
+  if (checkbox.checked) {
+    if (!tempSelectedNeighborhoods.includes(val)) tempSelectedNeighborhoods.push(val);
+  } else {
+    tempSelectedNeighborhoods = tempSelectedNeighborhoods.filter(n => n !== val);
+  }
+  updateMapSelection();
+}
+
+function toggleDistrictOnMap(districtName) {
+  const data = SOFIA_DISTRICTS[districtName];
+  if (!data) return;
+  const allSelected = data.quarters.every(q => tempSelectedNeighborhoods.includes(q));
+  if (allSelected) {
+    tempSelectedNeighborhoods = tempSelectedNeighborhoods.filter(n => !data.quarters.includes(n));
+  } else {
+    data.quarters.forEach(q => {
+      if (!tempSelectedNeighborhoods.includes(q)) tempSelectedNeighborhoods.push(q);
+    });
+  }
+  buildNeighborhoodList(document.getElementById('neighborhood-search-input').value);
+  updateMapSelection();
+  // Expand that district group in the list
+  const groups = document.querySelectorAll('.district-group');
+  groups.forEach(g => {
+    const name = g.querySelector('.district-name');
+    if (name && name.textContent === districtName) g.classList.add('expanded');
+  });
+}
+
+function updateMapSelection() {
+  document.querySelectorAll('.sofia-map path[data-district]').forEach(path => {
+    const district = path.getAttribute('data-district');
+    const data = SOFIA_DISTRICTS[district];
+    if (!data) return;
+    const anySelected = data.quarters.some(q => tempSelectedNeighborhoods.includes(q));
+    path.classList.toggle('selected', anySelected);
+  });
+}
+
+function openNeighborhoodPicker() {
+  tempSelectedNeighborhoods = [...selectedNeighborhoods];
+  buildNeighborhoodList();
+  updateMapSelection();
+  document.getElementById('neighborhood-modal').classList.add('active');
+  document.getElementById('neighborhood-search-input').value = '';
+  document.getElementById('neighborhood-search-input').focus();
+}
+
+function closeNeighborhoodPicker() {
+  document.getElementById('neighborhood-modal').classList.remove('active');
+}
+
+function clearNeighborhoods() {
+  tempSelectedNeighborhoods = [];
+  buildNeighborhoodList(document.getElementById('neighborhood-search-input').value);
+  updateMapSelection();
+}
+
+function applyNeighborhoods() {
+  selectedNeighborhoods = [...tempSelectedNeighborhoods];
+  updateLocationBarText();
+  updateHomeMapUI();
+  closeNeighborhoodPicker();
+  renderTaskCards();
+}
+
+function updateLocationBarText() {
+  const el = document.getElementById('location-bar-text');
+  if (selectedNeighborhoods.length === 0) {
+    el.textContent = 'София · Всички квартали';
+  } else if (selectedNeighborhoods.length <= 3) {
+    el.textContent = 'София · ' + selectedNeighborhoods.join(', ');
+  } else {
+    el.textContent = 'София · ' + selectedNeighborhoods.slice(0, 2).join(', ') + ' +' + (selectedNeighborhoods.length - 2);
+  }
+}
+
+function populateNeighborhoodSelect() {
+  const sel = document.getElementById('create-neighborhood');
+  if (!sel) return;
+  let html = '<option value="">Избери квартал</option>';
+  Object.entries(SOFIA_DISTRICTS).forEach(([district, data]) => {
+    html += `<optgroup label="■ ${district}">`;
+    data.quarters.forEach(q => {
+      html += `<option value="${q}">${q}</option>`;
+    });
+    html += '</optgroup>';
+  });
+  sel.innerHTML = html;
+}
+
+// ===== HOME MAP & DISTRICT DROPDOWN =====
+function populateHomeDistrictSelect() {
+  const sel = document.getElementById('home-district-select');
+  if (!sel) return;
+  let html = '<option value="">Всички райони — изберете район</option>';
+  Object.entries(SOFIA_DISTRICTS).forEach(([district, data]) => {
+    html += `<option value="${district}">■ ${district} (${data.quarters.length} квартала)</option>`;
+  });
+  sel.innerHTML = html;
+}
+
+function toggleDistrictHome(districtName) {
+  const data = SOFIA_DISTRICTS[districtName];
+  if (!data) return;
+  const allSelected = data.quarters.every(q => selectedNeighborhoods.includes(q));
+  if (allSelected) {
+    selectedNeighborhoods = selectedNeighborhoods.filter(n => !data.quarters.includes(n));
+  } else {
+    data.quarters.forEach(q => {
+      if (!selectedNeighborhoods.includes(q)) selectedNeighborhoods.push(q);
+    });
+  }
+  updateHomeMapUI();
+  updateLocationBarText();
+  renderTaskCards();
+}
+
+function selectDistrictFromDropdown(districtName) {
+  if (!districtName) return;
+  const data = SOFIA_DISTRICTS[districtName];
+  if (!data) return;
+  const allSelected = data.quarters.every(q => selectedNeighborhoods.includes(q));
+  if (!allSelected) {
+    data.quarters.forEach(q => {
+      if (!selectedNeighborhoods.includes(q)) selectedNeighborhoods.push(q);
+    });
+  }
+  document.getElementById('home-district-select').value = '';
+  updateHomeMapUI();
+  updateLocationBarText();
+  renderTaskCards();
+}
+
+function removeDistrictFromHome(districtName) {
+  const data = SOFIA_DISTRICTS[districtName];
+  if (!data) return;
+  selectedNeighborhoods = selectedNeighborhoods.filter(n => !data.quarters.includes(n));
+  updateHomeMapUI();
+  updateLocationBarText();
+  renderTaskCards();
+}
+
+function updateHomeMapUI() {
+  // Update home map path highlights
+  document.querySelectorAll('#home-sofia-map path[data-district]').forEach(path => {
+    const district = path.getAttribute('data-district');
+    const data = SOFIA_DISTRICTS[district];
+    if (!data) return;
+    const anySelected = data.quarters.some(q => selectedNeighborhoods.includes(q));
+    path.classList.toggle('selected', anySelected);
+  });
+  // Update tags
+  const tagsEl = document.getElementById('home-selected-tags');
+  if (!tagsEl) return;
+  let html = '';
+  Object.entries(SOFIA_DISTRICTS).forEach(([district, data]) => {
+    const anySelected = data.quarters.some(q => selectedNeighborhoods.includes(q));
+    if (anySelected) {
+      html += `<span class="district-tag" style="background:${data.color}" onclick="removeDistrictFromHome('${district}')">${district}<span class="tag-x">&times;</span></span>`;
+    }
+  });
+  tagsEl.innerHTML = html;
+}
+
+// ===== NAVIGATION =====
+function showView(name) {
+  if (['mytasks','messages','wallet','profile'].includes(name) && !requireAuth()) return;
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(`view-${name}`).classList.add('active');
+  // Bottom nav
+  document.querySelectorAll('.bottom-nav .nav-item').forEach(n=>n.classList.remove('active'));
+  const navMap = {home:0, mytasks:1, create:2, messages:3, wallet:4};
+  const btns = document.querySelectorAll('.bottom-nav .nav-item');
+  if(navMap[name] !== undefined) btns[navMap[name]].classList.add('active');
+  // Sidebar nav
+  const sidebarMap = {home:0, mytasks:1, messages:2, wallet:3};
+  document.querySelectorAll('.sidebar-nav-item:not(.create-sidebar-btn)').forEach(n=>n.classList.remove('active'));
+  const sidebarBtns = document.querySelectorAll('.sidebar-nav-item:not(.create-sidebar-btn)');
+  if(sidebarMap[name] !== undefined) sidebarBtns[sidebarMap[name]].classList.add('active');
+  if(name==='home') renderTaskCards();
+  if(name==='mytasks') renderMyTasks();
+  if(name==='messages') { document.getElementById('messages-list-view').style.display='block'; document.getElementById('chat-conversation').className='chat-view'; renderChats(); }
+  if(name==='wallet') renderWallet();
+  if(name==='profile') renderProfile();
+  if(name!=='detail') document.getElementById('bid-sticky').style.display = 'none';
+  window.scrollTo(0,0);
+}
+
+// Category filter
+document.querySelectorAll('.cat-chip').forEach(chip => {
+  chip.addEventListener('click', function() {
+    document.querySelectorAll('.cat-chip').forEach(c=>c.classList.remove('active'));
+    this.classList.add('active');
+    renderTaskCards();
+  });
+});
+
+// Sort filter
+document.querySelector('.sort-select')?.addEventListener('change', function() {
+  renderTaskCards();
+});
+
+// Neighborhood search filter
+document.getElementById('neighborhood-search-input')?.addEventListener('input', function() {
+  buildNeighborhoodList(this.value);
+});
+
+// Close neighborhood modal on overlay click
+document.getElementById('neighborhood-modal')?.addEventListener('click', function(e) {
+  if (e.target === this) closeNeighborhoodPicker();
+});
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(()=>{ t.style.display='none'; }, 2500);
+}
+
+// ===== INIT =====
+async function initApp() {
+  populateNeighborhoodSelect();
+  populateHomeDistrictSelect();
+  renderTaskCards();
+}
+
+// Restore session in background — app is already visible
+(async () => {
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      currentUser = session.user;
+      await loadProfile();
+    }
+  } catch(e) { /* ignore */ } finally {
+    updateHeader();
+    initApp();
+  }
+})();
+</script>
+</body>
+</html>

@@ -90,6 +90,20 @@ body {
 
 .header-right { display: flex; align-items: center; gap: 12px; }
 
+.lang-toggle-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.4);
+  color: white;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: background 0.2s;
+}
+.lang-toggle-btn:hover { background: rgba(255,255,255,0.1); }
+
 .notif-btn {
   position: relative;
   width: 36px;
@@ -2548,6 +2562,7 @@ body {
   <header class="app-header">
     <div class="logo">Quick<span>Task</span></div>
     <div class="header-right" id="header-right">
+      <button id="lang-toggle" onclick="switchLang()" class="lang-toggle-btn">EN</button>
       <!-- Shown when logged out (default until session resolves) -->
       <div class="header-auth-btns" id="header-auth-btns">
         <button class="btn-header-login" onclick="showAuthModal(); switchAuthTab('login')">Вход</button>
@@ -2569,23 +2584,23 @@ body {
     <nav class="sidebar-nav">
       <button class="sidebar-nav-item active" onclick="showView('home')">
         <span class="sidebar-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
-        Home
+        <span data-i18n="nav_home">Начало</span>
       </button>
       <button class="sidebar-nav-item" onclick="showView('mytasks')">
         <span class="sidebar-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
-        My Tasks
+        <span data-i18n="nav_mytasks">Моите задачи</span>
       </button>
       <button class="sidebar-nav-item" onclick="showView('messages')">
         <span class="sidebar-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></span>
-        Messages
+        <span data-i18n="nav_messages">Съобщения</span>
       </button>
       <button class="sidebar-nav-item" onclick="showView('wallet')">
         <span class="sidebar-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><path d="M1 10h22"/></svg></span>
-        Wallet
+        <span data-i18n="nav_wallet">Портфейл</span>
       </button>
       <button class="sidebar-nav-item create-sidebar-btn" onclick="showView('create')">
         <span class="sidebar-icon">+</span>
-        Post a Task
+        <span data-i18n="create_title">Публикувай задача</span>
       </button>
     </nav>
   </aside>
@@ -2880,24 +2895,24 @@ body {
   <nav class="bottom-nav">
     <button class="nav-item active" onclick="showView('home')">
       <span class="nav-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
-      <span>Home</span>
+      <span data-i18n="nav_home">Начало</span>
     </button>
     <button class="nav-item" onclick="showView('mytasks')">
       <span class="nav-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
-      <span>My Tasks</span>
+      <span data-i18n="nav_mytasks">Моите задачи</span>
     </button>
     <button class="nav-item create-btn" onclick="showView('create')">
       <span class="nav-icon">+</span>
-      <span>Post</span>
+      <span data-i18n="nav_post">Публикувай</span>
     </button>
     <button class="nav-item" onclick="showView('messages')">
       <span class="nav-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></span>
       <span class="msg-badge">2</span>
-      <span>Messages</span>
+      <span data-i18n="nav_messages">Съобщения</span>
     </button>
     <button class="nav-item" onclick="showView('wallet')">
       <span class="nav-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><path d="M1 10h22"/></svg></span>
-      <span>Wallet</span>
+      <span data-i18n="nav_wallet">Портфейл</span>
     </button>
   </nav>
 
@@ -2957,6 +2972,193 @@ let pendingAction = null; // action to run after login
 let currentConvId = null;
 
 const colors = ['#0d9488','#6366f1','#f59e0b','#ef4444','#8b5cf6','#ec4899','#0ea5e9','#f97316','#14b8a6','#a855f7'];
+
+// ===== i18n TRANSLATIONS =====
+let currentLang = localStorage.getItem('qt_lang') || 'bg';
+
+const STRINGS = {
+  bg: {
+    // Navigation
+    nav_home: 'Начало', nav_mytasks: 'Моите задачи', nav_post: 'Публикувай',
+    nav_messages: 'Съобщения', nav_wallet: 'Портфейл', nav_back: 'Назад',
+    // Auth
+    login: 'Вход', register: 'Регистрация', signup: 'Създай акаунт',
+    email: 'Имейл', password: 'Парола', name: 'Име и фамилия',
+    username: 'Потребителско име', continue_google: 'Продължи с Google',
+    continue_facebook: 'Продължи с Facebook', or: 'или',
+    // Create task
+    create_title: 'Публикувай задача', create_desc: 'Опиши задачата в детайли...',
+    category: 'Категория', price: 'Цена (€)', bidding_type: 'Тип наддаване',
+    location: 'Квартал', address: 'Адрес', preview: 'Preview & Post',
+    post_button: 'Post Task', edit_button: 'Edit',
+    // Task details
+    time_left: 'Време до края', location_label: 'Местоположение',
+    total_bids: 'Всички наддаждания', bidding_type_label: 'Тип наддаване',
+    open_bidding: 'Open Bidding', fixed_price: 'Fixed Price',
+    escrow_protected: 'Escrow Protected', cash_payment: 'Cash Payment',
+    escrow_desc: 'Payment held securely. Released to doer after task completion.',
+    cash_desc: 'Pay the doer directly in cash when the task is completed.',
+    price_bidding: 'Price Bidding', bids_label: 'Наддаждания',
+    no_bids_yet: 'Няма наддаждания. Бъди първи!', bids: 'наддаждания', tasks_completed: 'завършени задачи',
+    // My Tasks
+    posted_tab: 'Posted', bidding_tab: 'Bidding On', no_posted_tasks: 'Не си публикувал задачи',
+    no_bidding_tasks: 'Не си наддавал на задачи',
+    // Messages
+    messages_title: 'Съобщения', no_messages: 'Няма разговори. Те се появяват когато наддавач бъде избран.',
+    type_message: 'Напиши съобщение...', loading: 'Зареждане...', send: 'Изпрати',
+    // Wallet
+    total_balance: 'Обща баланса', available: 'Налична', held: 'Задържана',
+    cash_payments: 'Парични плащания', add_funds: 'Добави средства',
+    // Profile
+    member_since: 'Член от', rating: 'Оценка', tasks_done: 'Завършени задачи',
+    completion: 'Завършеност', trust_level: 'Ниво доверие', phone_verified: '✓ Телефон потвърден',
+    email_verified: '✓ Имейл потвърден', trusted: '⭐ Доверен', sign_out: 'Изход',
+    trust_progress: '🛡️ Ниво доверие', more_to_go: 'още да идат',
+    higher_trust: 'По-високо доверие = по-голяма видимост в резултатите',
+    // Empty states & Loading
+    loading_tasks: 'Зареждане на задачи...', no_tasks: 'Няма задачи. Публикувай първи!',
+    no_tasks_found: 'Няма намерени задачи с тези филтри', could_not_load: 'Грешка при зареждане на задачи',
+    // Toast messages
+    task_not_found: 'Задачата не е намерена', bid_not_found: 'Наддаждането не е намерено',
+    bid_submitted: 'Наддаждането е подадено успешно!', bidder_selected: 'Наддавач избран! Chat отключен.',
+    already_bid: 'Вече си наддавал на тази задача', please_enter_price: 'Моля въведи валидна цена',
+    fill_all_fields: 'Моля попълнете всички полета', task_posted_msg: 'Задачата е публикувана! Наддаванията са отворени.',
+    task_complete: 'Задачата е отбелязана като завършена!', failed_send: 'Неудачно изпращане',
+    add_funds_soon: 'Add Funds coming soon!', ended: 'Завършена',
+    // Categories
+    home_repair: 'Ремонт', cleaning: 'Почистване', delivery: 'Доставка',
+    errands: 'Поръчки', moving: 'Преместване', tech_help: 'Tech Help',
+    plumbing: 'Водопровод', electrical: 'Електрика', painting: 'Боядисване',
+    gardening: 'Градинарство', pet_care: 'Грижа за домашни', tutoring: 'Уроци',
+    beauty: 'Красота & Благополучие', other: 'Други',
+    // Search & Filter
+    search_placeholder: 'Търси задачи... (напр. монтаж)', search_neighborhood: 'Търси квартал...',
+    select_neighborhood: 'Избери квартал', apply: 'Прилади', cancel: 'Отмени',
+    // Error messages
+    fill_all_auth: 'Моля попълнете всички полета', min_password: 'Паролата трябва да е поне 6 символа',
+    timeout: 'Времето за връзка изтече. Опитайте отново.',
+    // Buttons & Links
+    place_bid: 'Направи наддаждане', select_bidder: 'Избери', why_pick_you: 'Защо да те изберат? Спомени своя опит...',
+  },
+  en: {
+    // Navigation
+    nav_home: 'Home', nav_mytasks: 'My Tasks', nav_post: 'Post',
+    nav_messages: 'Messages', nav_wallet: 'Wallet', nav_back: 'Back',
+    // Auth
+    login: 'Login', register: 'Sign Up', signup: 'Create Account',
+    email: 'Email', password: 'Password', name: 'Full Name',
+    username: 'Username', continue_google: 'Continue with Google',
+    continue_facebook: 'Continue with Facebook', or: 'or',
+    // Create task
+    create_title: 'Post a Task', create_desc: 'Describe the task in detail...',
+    category: 'Category', price: 'Price (€)', bidding_type: 'Bidding Type',
+    location: 'Neighborhood', address: 'Address', preview: 'Preview & Post',
+    post_button: 'Post Task', edit_button: 'Edit',
+    // Task details
+    time_left: 'Time Left', location_label: 'Location',
+    total_bids: 'Total Bids', bidding_type_label: 'Bidding Type',
+    open_bidding: 'Open Bidding', fixed_price: 'Fixed Price',
+    escrow_protected: 'Escrow Protected', cash_payment: 'Cash Payment',
+    escrow_desc: 'Payment held securely. Released to doer after task completion.',
+    cash_desc: 'Pay the doer directly in cash when the task is completed.',
+    price_bidding: 'Price Bidding', bids_label: 'Bids',
+    no_bids_yet: 'No bids yet. Be the first!', bids: 'bids', tasks_completed: 'tasks completed',
+    // My Tasks
+    posted_tab: 'Posted', bidding_tab: 'Bidding On', no_posted_tasks: 'No posted tasks yet',
+    no_bidding_tasks: 'No bids placed yet',
+    // Messages
+    messages_title: 'Messages', no_messages: 'No conversations yet. They appear when a bidder is selected.',
+    type_message: 'Type a message...', loading: 'Loading...', send: 'Send',
+    // Wallet
+    total_balance: 'Total Balance', available: 'Available', held: 'Held',
+    cash_payments: 'Cash Payments', add_funds: 'Add Funds',
+    // Profile
+    member_since: 'Member since', rating: 'Rating', tasks_done: 'Tasks Done',
+    completion: 'Completion', trust_level: 'Trust Level', phone_verified: '✓ Phone Verified',
+    email_verified: '✓ Email Verified', trusted: '⭐ Trusted', sign_out: 'Sign Out',
+    trust_progress: '🛡️ Trust Level Progress', more_to_go: 'more to go',
+    higher_trust: 'Higher trust = more visibility in search results',
+    // Empty states & Loading
+    loading_tasks: 'Loading tasks...', no_tasks: 'No tasks yet. Be the first to post one!',
+    no_tasks_found: 'No tasks found with these filters', could_not_load: 'Could not load tasks',
+    // Toast messages
+    task_not_found: 'Task not found', bid_not_found: 'Bid not found',
+    bid_submitted: 'Bid submitted successfully!', bidder_selected: 'Bidder selected! Chat unlocked.',
+    already_bid: 'You already bid on this task', please_enter_price: 'Please enter a valid price',
+    fill_all_fields: 'Please fill in all required fields', task_posted_msg: 'Task posted! Bidding is now open.',
+    task_complete: 'Task marked as complete!', failed_send: 'Failed to send',
+    add_funds_soon: 'Add Funds coming soon!', ended: 'Ended',
+    // Categories
+    home_repair: 'Home Repair', cleaning: 'Cleaning', delivery: 'Delivery',
+    errands: 'Errands', moving: 'Moving', tech_help: 'Tech Help',
+    plumbing: 'Plumbing', electrical: 'Electrical', painting: 'Painting',
+    gardening: 'Gardening', pet_care: 'Pet Care', tutoring: 'Tutoring',
+    beauty: 'Beauty & Wellness', other: 'Other',
+    // Search & Filter
+    search_placeholder: 'Search tasks... (e.g. repair)', search_neighborhood: 'Search neighborhood...',
+    select_neighborhood: 'Select neighborhood', apply: 'Apply', cancel: 'Cancel',
+    // Error messages
+    fill_all_auth: 'Please fill in all fields', min_password: 'Password must be at least 6 characters',
+    timeout: 'Connection timeout. Please try again.',
+    // Buttons & Links
+    place_bid: 'Place Your Bid', select_bidder: 'Select', why_pick_you: 'Why should they pick you? Mention your experience...',
+  }
+};
+
+const CAT_LABELS = {
+  bg: {
+    'home-repair': 'Ремонт', 'cleaning': 'Почистване', 'delivery': 'Доставка',
+    'errands': 'Поръчки', 'moving': 'Преместване', 'tech-help': 'Tech Help',
+    'plumbing': 'Водопровод', 'electrical': 'Електрика', 'painting': 'Боядисване',
+    'gardening': 'Градинарство', 'pet-care': 'Грижа за домашни', 'tutoring': 'Уроци',
+    'beauty': 'Красота & Благополучие', 'other': 'Други'
+  },
+  en: {
+    'home-repair': 'Home Repair', 'cleaning': 'Cleaning', 'delivery': 'Delivery',
+    'errands': 'Errands', 'moving': 'Moving', 'tech-help': 'Tech Help',
+    'plumbing': 'Plumbing', 'electrical': 'Electrical', 'painting': 'Painting',
+    'gardening': 'Gardening', 'pet-care': 'Pet Care', 'tutoring': 'Tutoring',
+    'beauty': 'Beauty & Wellness', 'other': 'Other'
+  }
+};
+
+function t(key) {
+  return (STRINGS[currentLang] && STRINGS[currentLang][key]) || STRINGS['bg'][key] || key;
+}
+
+function getCAT(slug) {
+  return (CAT_LABELS[currentLang] && CAT_LABELS[currentLang][slug]) || (CAT_LABELS['bg'] && CAT_LABELS['bg'][slug]) || slug;
+}
+
+function applyTranslations() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const attr = el.getAttribute('data-i18n-attr');
+    if (attr) {
+      el.setAttribute(attr, t(key));
+    } else {
+      el.textContent = t(key);
+    }
+  });
+  document.documentElement.lang = currentLang;
+}
+
+function switchLang() {
+  currentLang = currentLang === 'bg' ? 'en' : 'bg';
+  localStorage.setItem('qt_lang', currentLang);
+  document.getElementById('lang-toggle').textContent = currentLang === 'bg' ? 'EN' : 'BG';
+  applyTranslations();
+  // Re-render current active view
+  const activeView = document.querySelector('.view.active');
+  if (activeView) {
+    const name = activeView.id.replace('view-', '');
+    if (name === 'home') renderTaskCards();
+    else if (name === 'mytasks') renderMyTasks();
+    else if (name === 'messages') renderChats();
+    else if (name === 'wallet') renderWallet();
+    else if (name === 'profile') renderProfile();
+  }
+}
 
 const TRUST_MAP = {
   'new': { label:'New', badge:'new-user', dots:1 },
@@ -3233,7 +3435,7 @@ function formatDate(d) {
 // ===== RENDER TASK CARDS =====
 async function renderTaskCards() {
   const grid = document.getElementById('tasks-grid');
-  grid.innerHTML = '<div class="loading-spinner">Loading tasks...</div>';
+  grid.innerHTML = `<div class="loading-spinner">${t('loading_tasks')}</div>`;
 
   let query = sb.from('tasks').select('*, poster:profiles!poster_id(id, full_name, avatar_url, rating_avg, rating_count, trust_level)').eq('status', 'open').order('created_at', { ascending: false }).limit(30);
 
@@ -3247,13 +3449,13 @@ async function renderTaskCards() {
   const { data: tasks, error } = await query;
 
   if(error || !tasks) {
-    grid.innerHTML = '<div class="empty-state"><div class="icon">😕</div><p>Could not load tasks</p></div>';
+    grid.innerHTML = `<div class="empty-state"><div class="icon">😕</div><p>${t('could_not_load')}</p></div>`;
     return;
   }
 
   if(tasks.length === 0) {
-    grid.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>No tasks yet. Be the first to post one!</p></div>';
-    document.getElementById('task-count').textContent = '0 tasks';
+    grid.innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>${t('no_tasks')}</p></div>`;
+    document.getElementById('task-count').textContent = t('no_tasks');
     return;
   }
 
@@ -3301,7 +3503,7 @@ async function renderTaskCards() {
   document.getElementById('task-count').textContent = filtered.length + ' задачи' + (countParts.length ? ' · ' + countParts.join(' · ') : ' наблизо');
 
   if (filtered.length === 0 && tasks.length > 0) {
-    grid.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><p>Няма намерени задачи с тези филтри</p></div>';
+    grid.innerHTML = `<div class="empty-state"><div class="icon">🔍</div><p>${t('no_tasks_found')}</p></div>`;
     return;
   }
 
@@ -3318,7 +3520,7 @@ async function renderTaskCards() {
     const initials = getInitials(poster.full_name);
     const color = getColor(poster.id);
     const tl = timeLeft(t.bidding_ends_at);
-    const catDisplay = CAT_MAP[t.category] || t.category;
+    const catDisplay = getCAT(t.category);
 
     html += `
       <div class="task-card" onclick="openTask('${t.id}')">
@@ -3344,8 +3546,8 @@ async function renderTaskCards() {
           </div>
           <div class="task-meta">
             ${t.location ? '<span class="task-location-tag">📍 ' + t.location.split(',')[0] + '</span>' : ''}
-            <span class="meta-item"><span class="countdown ${tl !== 'Ended' && parseInt(tl) > 2 ? 'ok' : ''}"><span class="dot"></span> ${tl}</span></span>
-            <span class="meta-item">${t.bid_count || 0} bids</span>
+            <span class="meta-item"><span class="countdown ${tl !== t('ended') && parseInt(tl) > 2 ? 'ok' : ''}"><span class="dot"></span> ${tl}</span></span>
+            <span class="meta-item">${t.bid_count || 0} ${t('bids')}</span>
           </div>
         </div>
       </div>`;
@@ -3355,39 +3557,39 @@ async function renderTaskCards() {
 }
 
 async function openTask(id) {
-  const { data: t, error } = await sb.from('tasks').select('*, poster:profiles!poster_id(id, full_name, avatar_url, rating_avg, rating_count, trust_level, tasks_completed)').eq('id', id).single();
-  if(error || !t) return showToast('Task not found');
-  currentTask = t;
+  const { data: task, error } = await sb.from('tasks').select('*, poster:profiles!poster_id(id, full_name, avatar_url, rating_avg, rating_count, trust_level, tasks_completed)').eq('id', id).single();
+  if(error || !task) return showToast(t('task_not_found'));
+  currentTask = task;
 
-  const poster = t.poster || {};
+  const poster = task.poster || {};
   const trust = getTrust(poster.trust_level);
   const initials = getInitials(poster.full_name);
   const color = getColor(poster.id);
-  const tl = timeLeft(t.bidding_ends_at);
-  const catDisplay = CAT_MAP[t.category] || t.category;
-  const isOwner = currentUser && t.poster_id === currentUser.id;
+  const tl = timeLeft(task.bidding_ends_at);
+  const catDisplay = getCAT(task.category);
+  const isOwner = currentUser && task.poster_id === currentUser.id;
 
   document.getElementById('detail-content').innerHTML = `
     <span class="detail-cat-badge">${catDisplay}</span>
-    <h1>${t.title}</h1>
+    <h1>${task.title}</h1>
     <div class="detail-price-row">
-      <span class="detail-price">€${parseFloat(t.price).toFixed(0)}</span>
-      <span class="bidding-badge ${t.bidding_type==='price'?'price-bid':'fixed-price'}">${t.bidding_type==='price'?'Price Bidding':'Fixed Price'}</span>
-      ${renderPayBadge(t.payment_method)}
+      <span class="detail-price">€${parseFloat(task.price).toFixed(0)}</span>
+      <span class="bidding-badge ${task.bidding_type==='price'?'price-bid':'fixed-price'}">${task.bidding_type==='price'?t('price_bidding'):t('fixed_price')}</span>
+      ${renderPayBadge(task.payment_method)}
     </div>`;
 
-  const payInfo = t.payment_method === 'escrow'
-    ? `<div class="payment-info-box"><div class="pay-icon escrow-icon">🔒</div><div class="pay-details"><h5>Escrow Protected</h5><p>Payment held securely. Released to doer after task completion.</p></div></div>`
-    : `<div class="payment-info-box"><div class="pay-icon cash-icon">💵</div><div class="pay-details"><h5>Cash Payment</h5><p>Pay the doer directly in cash when the task is completed.</p></div></div>`;
+  const payInfo = task.payment_method === 'escrow'
+    ? `<div class="payment-info-box"><div class="pay-icon escrow-icon">🔒</div><div class="pay-details"><h5>${t('escrow_protected')}</h5><p>${t('escrow_desc')}</p></div></div>`
+    : `<div class="payment-info-box"><div class="pay-icon cash-icon">💵</div><div class="pay-details"><h5>${t('cash_payment')}</h5><p>${t('cash_desc')}</p></div></div>`;
 
   document.getElementById('detail-body').innerHTML = `
-    <p class="detail-desc">${t.description}</p>
+    <p class="detail-desc">${task.description}</p>
     ${payInfo}
     <div class="detail-info-grid">
-      <div class="info-card"><div class="label">Time Left</div><div class="value"><span class="countdown ${tl !== 'Ended' && parseInt(tl) > 2 ? 'ok' : ''}"><span class="dot"></span> ${tl}</span></div></div>
-      <div class="info-card"><div class="label">Location</div><div class="value">${t.location || 'Not specified'}</div></div>
-      <div class="info-card"><div class="label">Total Bids</div><div class="value">${t.bid_count || 0} bids</div></div>
-      <div class="info-card"><div class="label">Bidding Type</div><div class="value">${t.bidding_type==='price'?'Open Bidding':'Fixed Price'}</div></div>
+      <div class="info-card"><div class="label">${t('time_left')}</div><div class="value"><span class="countdown ${tl !== t('ended') && parseInt(tl) > 2 ? 'ok' : ''}"><span class="dot"></span> ${tl}</span></div></div>
+      <div class="info-card"><div class="label">${t('location_label')}</div><div class="value">${task.location || 'Not specified'}</div></div>
+      <div class="info-card"><div class="label">${t('total_bids')}</div><div class="value">${task.bid_count || 0} ${t('bids')}</div></div>
+      <div class="info-card"><div class="label">${t('bidding_type_label')}</div><div class="value">${task.bidding_type==='price'?t('open_bidding'):t('fixed_price')}</div></div>
     </div>
     <div class="detail-poster-card">
       <div class="avatar" style="background:${color};width:40px;height:40px;font-size:15px">
@@ -3397,7 +3599,7 @@ async function openTask(id) {
       <div class="info">
         <h4>${poster.full_name || 'User'} ${renderTrustBadge(trust)}</h4>
         <div class="rating">${renderStars(poster.rating_avg)}</div>
-        <div class="tasks-done">${poster.tasks_completed || 0} tasks completed ${renderTrustDots(trust)}</div>
+        <div class="tasks-done">${poster.tasks_completed || 0} ${t('tasks_completed')} ${renderTrustDots(trust)}</div>
       </div>
     </div>`;
 
@@ -3406,27 +3608,27 @@ async function openTask(id) {
 
   const bidsSection = document.getElementById('bids-section');
   if(bids && bids.length > 0) {
-    bidsSection.innerHTML = `<h3>Bids (${bids.length})</h3>` + bids.map(b => {
+    bidsSection.innerHTML = `<h3>${t('bids_label')} (${bids.length})</h3>` + bids.map(b => {
       const bt = getTrust(b.bidder?.trust_level);
       const bi = getInitials(b.bidder?.full_name);
       const bc = getColor(b.bidder?.id);
       return `<div class="bid-card">
         <div class="avatar" style="background:${bc};width:36px;height:36px;font-size:13px">${bt === TRUST_MAP['premium'] ? '<span class="premium-ring"></span>' : ''}${bi}</div>
         <div class="bid-info">
-          <div class="bid-header"><span class="name">${b.bidder?.full_name || 'User'} ${renderTrustBadge(bt)}</span><span class="bid-price">€${parseFloat(b.amount || t.price).toFixed(0)}</span></div>
+          <div class="bid-header"><span class="name">${b.bidder?.full_name || 'User'} ${renderTrustBadge(bt)}</span><span class="bid-price">€${parseFloat(b.amount || task.price).toFixed(0)}</span></div>
           <div class="rating">${renderStars(b.bidder?.rating_avg)} ${renderTrustDots(bt)}</div>
           <div class="bid-msg">${b.message || ''}</div>
-          ${isOwner && b.status === 'pending' ? `<button class="select-bid-btn" onclick="selectBid('${b.id}', event)">Select ${(b.bidder?.full_name || 'User').split(' ')[0]}</button>` : ''}
+          ${isOwner && b.status === 'pending' ? `<button class="select-bid-btn" onclick="selectBid('${b.id}', event)">${t('select_bidder')} ${(b.bidder?.full_name || 'User').split(' ')[0]}</button>` : ''}
         </div>
       </div>`;
     }).join('');
   } else {
-    bidsSection.innerHTML = '<h3>Bids</h3><div class="empty-state"><div class="icon">🤷</div><p>No bids yet. Be the first!</p></div>';
+    bidsSection.innerHTML = `<h3>${t('bids_label')}</h3><div class="empty-state"><div class="icon">🤷</div><p>${t('no_bids_yet')}</p></div>`;
   }
 
   // Don't show bid button if owner or already bid
   const alreadyBid = bids && bids.some(b => b.bidder_id === currentUser?.id);
-  document.getElementById('bid-sticky').style.display = (isOwner || alreadyBid || tl === 'Ended') ? 'none' : 'block';
+  document.getElementById('bid-sticky').style.display = (isOwner || alreadyBid || tl === t('ended')) ? 'none' : 'block';
   showView('detail');
 }
 
@@ -3454,7 +3656,7 @@ async function submitBid() {
   const amount = currentTask.bidding_type === 'fixed' ? currentTask.price : parseFloat(document.getElementById('bid-price-input').value);
   const message = document.getElementById('bid-message-input').value.trim();
 
-  if(currentTask.bidding_type === 'price' && (!amount || amount <= 0)) return showToast('Please enter a valid price');
+  if(currentTask.bidding_type === 'price' && (!amount || amount <= 0)) return showToast(t('please_enter_price'));
 
   const { error } = await sb.from('bids').insert({
     task_id: currentTask.id,
@@ -3464,12 +3666,12 @@ async function submitBid() {
   });
 
   if(error) {
-    if(error.message.includes('duplicate')) return showToast('You already bid on this task');
+    if(error.message.includes('duplicate')) return showToast(t('already_bid'));
     return showToast('Error: ' + error.message);
   }
 
   closeBidModal();
-  showToast('Bid submitted successfully!');
+  showToast(t('bid_submitted'));
   openTask(currentTask.id);
 }
 
@@ -3478,7 +3680,7 @@ async function selectBid(bidId, e) {
   if(!currentTask || !currentUser) return;
 
   const { data: bid } = await sb.from('bids').select('*').eq('id', bidId).single();
-  if(!bid) return showToast('Bid not found');
+  if(!bid) return showToast(t('bid_not_found'));
 
   // Update task
   await sb.from('tasks').update({ status: 'in_progress', selected_bid_id: bidId, selected_doer_id: bid.bidder_id }).eq('id', currentTask.id);
@@ -3494,7 +3696,7 @@ async function selectBid(bidId, e) {
     agreed_price: bid.amount || currentTask.price
   }, { onConflict: 'task_id,poster_id,doer_id' });
 
-  showToast('Bidder selected! Chat unlocked.');
+  showToast(t('bidder_selected'));
   openTask(currentTask.id);
 }
 
@@ -3507,26 +3709,26 @@ async function renderMyTasks() {
 
   const postedEl = document.getElementById('posted-tasks');
   if(posted && posted.length > 0) {
-    postedEl.innerHTML = posted.map(t => {
-      const st = t.status.replace('_', '-');
-      const tl = timeLeft(t.bidding_ends_at);
-      const catDisplay = CAT_MAP[t.category] || t.category;
-      return `<div class="my-task-card" onclick="openTask('${t.id}')">
-        <div class="my-task-top"><h4>${t.title}</h4><span class="status-badge ${st}">${st.replace('-',' ')}</span></div>
+    postedEl.innerHTML = posted.map(task => {
+      const st = task.status.replace('_', '-');
+      const tl = timeLeft(task.bidding_ends_at);
+      const catDisplay = getCAT(task.category);
+      return `<div class="my-task-card" onclick="openTask('${task.id}')">
+        <div class="my-task-top"><h4>${task.title}</h4><span class="status-badge ${st}">${st.replace('-',' ')}</span></div>
         <div class="my-task-meta">
-          <span>€${parseFloat(t.price).toFixed(0)}</span>
-          <span>${t.payment_method === 'escrow' ? '🔒 Escrow' : '💵 Cash'}</span>
+          <span>€${parseFloat(task.price).toFixed(0)}</span>
+          <span>${task.payment_method === 'escrow' ? '🔒 Escrow' : '💵 Cash'}</span>
           <span>${catDisplay}</span>
-          ${t.status==='open' ? `<span>${t.bid_count || 0} bids · ${tl} left</span>` : ''}
-          ${t.status==='in_progress' ? `<span>Doer: ${t.selected_doer?.full_name || 'Selected'}</span>` : ''}
-          ${t.status==='completed' ? `<span>Done by: ${t.selected_doer?.full_name || 'User'}</span>` : ''}
+          ${task.status==='open' ? `<span>${task.bid_count || 0} ${t('bids')} · ${tl} left</span>` : ''}
+          ${task.status==='in_progress' ? `<span>Doer: ${task.selected_doer?.full_name || 'Selected'}</span>` : ''}
+          ${task.status==='completed' ? `<span>Done by: ${task.selected_doer?.full_name || 'User'}</span>` : ''}
         </div>
-        ${t.status==='in_progress' ? `<button class="mark-complete-btn" onclick="event.stopPropagation();completeTask('${t.id}')">✓ Mark as Complete</button>` : ''}
-        ${t.status==='completed' ? '<div style="margin-top:8px;font-size:12px;color:var(--warning)">★★★★★ Rated</div>' : ''}
+        ${task.status==='in_progress' ? `<button class="mark-complete-btn" onclick="event.stopPropagation();completeTask('${task.id}')">✓ Mark as Complete</button>` : ''}
+        ${task.status==='completed' ? '<div style="margin-top:8px;font-size:12px;color:var(--warning)">★★★★★ Rated</div>' : ''}
       </div>`;
     }).join('');
   } else {
-    postedEl.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>No posted tasks yet</p></div>';
+    postedEl.innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>${t('no_posted_tasks')}</p></div>`;
   }
 
   // Bidding on
@@ -3536,7 +3738,7 @@ async function renderMyTasks() {
   if(myBids && myBids.length > 0) {
     biddingEl.innerHTML = myBids.map(b => {
       const st = b.status === 'pending' ? 'pending' : b.status === 'selected' ? 'selected' : 'not-selected';
-      const catDisplay = CAT_MAP[b.task?.category] || b.task?.category || '';
+      const catDisplay = getCAT(b.task?.category);
       return `<div class="my-task-card" onclick="openTask('${b.task?.id}')">
         <div class="my-task-top"><h4>${b.task?.title || 'Task'}</h4><span class="status-badge ${st}">${st.replace('-',' ')}</span></div>
         <div class="my-task-meta">
@@ -3547,7 +3749,7 @@ async function renderMyTasks() {
       </div>`;
     }).join('');
   } else {
-    biddingEl.innerHTML = '<div class="empty-state"><div class="icon">🙋</div><p>No bids placed yet</p></div>';
+    biddingEl.innerHTML = `<div class="empty-state"><div class="icon">🙋</div><p>${t('no_bidding_tasks')}</p></div>`;
   }
 }
 
@@ -3561,7 +3763,7 @@ function switchMyTab(btn, tab) {
 async function completeTask(id) {
   const { error } = await sb.from('tasks').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', id);
   if(error) return showToast('Error: ' + error.message);
-  showToast('Task marked as complete!');
+  showToast(t('task_complete'));
   renderMyTasks();
 }
 
@@ -3569,12 +3771,12 @@ async function completeTask(id) {
 async function renderChats() {
   if(!currentUser) return;
   const chatList = document.getElementById('chat-list');
-  chatList.innerHTML = '<div class="loading-spinner">Loading...</div>';
+  chatList.innerHTML = `<div class="loading-spinner">${t('loading')}</div>`;
 
   const { data: convos } = await sb.from('conversations').select('*, task:tasks(id, title, price, status), poster:profiles!poster_id(id, full_name, avatar_url, trust_level), doer:profiles!doer_id(id, full_name, avatar_url, trust_level)').or(`poster_id.eq.${currentUser.id},doer_id.eq.${currentUser.id}`).order('last_message_at', { ascending: false, nullsFirst: false });
 
   if(!convos || convos.length === 0) {
-    chatList.innerHTML = '<div class="empty-state"><div class="icon">💬</div><p>No conversations yet. They appear when a bidder is selected.</p></div>';
+    chatList.innerHTML = `<div class="empty-state"><div class="icon">💬</div><p>${t('no_messages')}</p></div>`;
     return;
   }
 
@@ -3753,28 +3955,28 @@ async function renderProfile() {
   profileCard.innerHTML = `
     <div class="profile-avatar">${initials}</div>
     <h3>${p.full_name}</h3>
-    <div class="member-since">Member since ${memberDate}</div>
+    <div class="member-since">${t('member_since')} ${memberDate}</div>
     <div style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap">
-      ${p.phone_verified ? '<span class="trust-badge verified">✓ Phone Verified</span>' : ''}
-      ${p.email_verified ? '<span class="trust-badge verified">✓ Email Verified</span>' : ''}
+      ${p.phone_verified ? `<span class="trust-badge verified">${t('phone_verified')}</span>` : ''}
+      ${p.email_verified ? `<span class="trust-badge verified">${t('email_verified')}</span>` : ''}
       ${renderTrustBadge(trust)}
     </div>
     <div class="trust-summary">
-      <div class="trust-stat"><div class="stat-value">${parseFloat(p.rating_avg || 0).toFixed(1)}</div><div class="stat-label">Rating</div></div>
-      <div class="trust-stat"><div class="stat-value">${p.tasks_completed || 0}</div><div class="stat-label">Tasks Done</div></div>
+      <div class="trust-stat"><div class="stat-value">${parseFloat(p.rating_avg || 0).toFixed(1)}</div><div class="stat-label">${t('rating')}</div></div>
+      <div class="trust-stat"><div class="stat-value">${p.tasks_completed || 0}</div><div class="stat-label">${t('tasks_done')}</div></div>
       <div class="trust-stat"><div class="stat-value">${p.tasks_posted || 0}</div><div class="stat-label">Posted</div></div>
     </div>`;
 
   const progressCard = document.querySelector('#view-profile .trust-progress-card');
   const checks = [
-    { done: p.email_verified, text: 'Email verified' },
-    { done: p.phone_verified, text: 'Phone verified' },
-    { done: (p.tasks_completed || 0) >= 5, text: '5+ tasks completed' },
+    { done: p.email_verified, text: t('email_verified') },
+    { done: p.phone_verified, text: t('phone_verified') },
+    { done: (p.tasks_completed || 0) >= 5, text: '5+ ' + t('tasks_completed') },
     { done: (p.rating_avg || 0) >= 4.5, text: '4.5+ star rating' },
-    { done: (p.tasks_completed || 0) >= 20, text: '20+ tasks completed' },
+    { done: (p.tasks_completed || 0) >= 20, text: '20+ ' + t('tasks_completed') },
     { done: p.is_premium, text: 'Premium member' }
   ];
-  progressCard.innerHTML = '<h4>🛡️ Trust Level Progress</h4>' + checks.map(c => `
+  progressCard.innerHTML = `<h4>${t('trust_progress')}</h4>` + checks.map(c => `
     <div class="progress-item">
       <div class="check ${c.done ? 'done' : 'pending'}">${c.done ? '✓' : '○'}</div>
       <span class="prog-text ${c.done ? 'completed' : ''}">${c.text}</span>
@@ -3830,7 +4032,7 @@ async function postTask() {
   const location = neighborhood ? (neighborhood + (address ? ', ' + address : '')) : address;
   const bidType = document.querySelector('.toggle-opt.active')?.textContent.includes('propose') ? 'price' : 'fixed';
 
-  if(!title || !desc || !price || !category) return showToast('Please fill in all required fields');
+  if(!title || !desc || !price || !category) return showToast(t('fill_all_fields'));
 
   const durationHours = parseInt(durationText) || 6;
   const selectionHours = parseInt(selectionText) || 3;
@@ -3855,7 +4057,7 @@ async function postTask() {
   document.getElementById('create-price').value = '';
   document.getElementById('create-neighborhood').value = '';
   document.getElementById('create-address').value = '';
-  showToast('Task posted! Bidding is now open.');
+  showToast(t('task_posted_msg'));
   setTimeout(() => { showView('home'); renderTaskCards(); }, 1200);
 }
 
@@ -4213,6 +4415,10 @@ async function initApp() {
       await loadProfile();
     }
   } catch(e) { /* ignore */ } finally {
+    // Initialize language support
+    currentLang = localStorage.getItem('qt_lang') || 'bg';
+    document.getElementById('lang-toggle').textContent = currentLang === 'bg' ? 'EN' : 'BG';
+    applyTranslations();
     updateHeader();
     initApp();
   }

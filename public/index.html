@@ -4398,6 +4398,55 @@ function showToast(msg) {
   setTimeout(()=>{ t.style.display='none'; }, 2500);
 }
 
+// ===== DUMMY DATA GENERATION =====
+async function createDummyPosts() {
+  if (!currentUser) return showToast('Please log in first');
+
+  const dummyTasks = [
+    { title: 'Перфектна чистка на дом', desc: 'Нужна професионална чистка на апартамент 3 стаи', category: 'cleaning', price: 120, neighborhood: 'Център', address: 'бул. Васил Левски' },
+    { title: 'Инсталация на кухненски шкафове', desc: 'Монтаж на нови шкафове, нужен опитен майстор', category: 'handyman', price: 250, neighborhood: 'Люлин', address: 'ж.к. Люлин 5' },
+    { title: 'Транспорт на мебели', desc: 'Преместване на диван и маса, нужен камион', category: 'moving', price: 80, neighborhood: 'Изток', address: 'ж.к. Изток' },
+    { title: 'Дизайн на логото', desc: 'Създаване на професионално лого за малък бизнес', category: 'design', price: 200, neighborhood: 'Младост', address: '' },
+    { title: 'Помощ с уебсайт', desc: 'Поправка на контактна форма и быстрот на сайта', category: 'tech', price: 150, neighborhood: 'Трендафилова градина', address: '' },
+    { title: 'Частни уроци по математика', desc: 'Подготовка на ученик за матура, 3-4 часа седмично', category: 'tutoring', price: 25, neighborhood: 'Борово', address: '' },
+    { title: 'Дърводелски услуги', desc: 'Направа на полица и опаковане на мебели', category: 'handyman', price: 180, neighborhood: 'Слатина', address: '' },
+    { title: 'Фотография на събитие', desc: 'Снимане на сватба, 6 часа работа', category: 'photography', price: 400, neighborhood: 'Младост 2', address: '' },
+    { title: 'SEO оптимизация', desc: 'Подобряване на видимост на малкия е-магазин', category: 'tech', price: 300, neighborhood: 'Иван Вазов', address: '' },
+    { title: 'Писане на статии', desc: 'Съдържание за блог, 2000+ думи, всеки постер', category: 'writing', price: 60, neighborhood: 'Абагар', address: '' },
+    { title: 'Уход на тревата', desc: 'Кошене, тримериране и озеленяване на градина', category: 'gardening', price: 100, neighborhood: 'Симеоново', address: '' },
+    { title: 'Поправка на велосипед', desc: 'Смяна на вериги и поправка на спирачки', category: 'repair', price: 50, neighborhood: 'Момина паст', address: '' },
+    { title: 'Вокални уроци онлайн', desc: 'Обучение в пеене, всеки ден освен неделя', category: 'tutoring', price: 30, neighborhood: 'Банишора', address: '' },
+    { title: 'Пакетиране и изпращане', desc: 'Подготовка и пощилане на парцели за ебей продажба', category: 'packing', price: 35, neighborhood: 'Новинки', address: '' },
+    { title: 'Детайлинг на кола', desc: 'Пълно почистване и восъкване на автомобил', category: 'automotive', price: 280, neighborhood: 'Красна поляна', address: '' }
+  ];
+
+  let created = 0;
+  for (const task of dummyTasks) {
+    const durationHours = 7;
+    const selectionHours = 3;
+    const biddingEndsAt = new Date(Date.now() + durationHours * 3600000).toISOString();
+
+    const { error } = await sb.from('tasks').insert({
+      poster_id: currentUser.id,
+      title: task.title,
+      description: task.desc,
+      category: task.category,
+      price: task.price,
+      bidding_type: 'fixed',
+      payment_method: 'cash',
+      location: task.neighborhood + (task.address ? ', ' + task.address : ''),
+      bidding_duration_hours: durationHours,
+      selection_duration_hours: selectionHours,
+      bidding_ends_at: biddingEndsAt
+    });
+
+    if (!error) created++;
+  }
+
+  showToast(`Created ${created} dummy posts!`);
+  setTimeout(() => { renderTaskCards(); }, 800);
+}
+
 // ===== INIT =====
 async function initApp() {
   populateNeighborhoodSelect();

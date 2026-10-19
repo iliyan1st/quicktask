@@ -2630,21 +2630,21 @@ body {
       </div>
 
       <div class="categories-scroll">
-        <button class="cat-chip active">All</button>
-        <button class="cat-chip">Home Repair</button>
-        <button class="cat-chip">Cleaning</button>
-        <button class="cat-chip">Delivery</button>
-        <button class="cat-chip">Errands</button>
-        <button class="cat-chip">Moving</button>
-        <button class="cat-chip">Tech Help</button>
-        <button class="cat-chip">Plumbing</button>
-        <button class="cat-chip">Electrical</button>
-        <button class="cat-chip">Painting</button>
-        <button class="cat-chip">Gardening</button>
-        <button class="cat-chip">Pet Care</button>
-        <button class="cat-chip">Tutoring</button>
-        <button class="cat-chip">Beauty & Wellness</button>
-        <button class="cat-chip">Other</button>
+        <button class="cat-chip active" data-cat="all">All</button>
+        <button class="cat-chip" data-cat="home-repair">Home Repair</button>
+        <button class="cat-chip" data-cat="cleaning">Cleaning</button>
+        <button class="cat-chip" data-cat="delivery">Delivery</button>
+        <button class="cat-chip" data-cat="errands">Errands</button>
+        <button class="cat-chip" data-cat="moving">Moving</button>
+        <button class="cat-chip" data-cat="tech-help">Tech Help</button>
+        <button class="cat-chip" data-cat="plumbing">Plumbing</button>
+        <button class="cat-chip" data-cat="electrical">Electrical</button>
+        <button class="cat-chip" data-cat="painting">Painting</button>
+        <button class="cat-chip" data-cat="gardening">Gardening</button>
+        <button class="cat-chip" data-cat="pet-care">Pet Care</button>
+        <button class="cat-chip" data-cat="tutoring">Tutoring</button>
+        <button class="cat-chip" data-cat="beauty">Beauty & Wellness</button>
+        <button class="cat-chip" data-cat="other">Other</button>
       </div>
 
       <div class="home-map-section" id="home-map-section">
@@ -2658,11 +2658,11 @@ body {
 
       <div class="sort-bar">
         <span id="task-count">12 tasks nearby</span>
-        <select class="sort-select">
-          <option>Nearest first</option>
-          <option>Newest first</option>
-          <option>Price: Low to High</option>
-          <option>Price: High to Low</option>
+        <select class="sort-select" id="sort-tasks" onchange="renderTaskCards()">
+          <option value="newest">Newest first</option>
+          <option value="ending">Ending soon</option>
+          <option value="price_low">Price: Low to High</option>
+          <option value="price_high">Price: High to Low</option>
         </select>
       </div>
 
@@ -3034,6 +3034,7 @@ const STRINGS = {
     // Search & Filter
     search_placeholder: 'Търси задачи... (напр. монтаж)', search_neighborhood: 'Търси квартал...',
     select_neighborhood: 'Избери квартал', apply: 'Прилади', cancel: 'Отмени',
+    cat_all: 'Всички', tasks_nearby: 'наблизо', tasks_word: 'задачи',
     // Error messages
     fill_all_auth: 'Моля попълнете всички полета', min_password: 'Паролата трябва да е поне 6 символа',
     timeout: 'Времето за връзка изтече. Опитайте отново.',
@@ -3097,6 +3098,7 @@ const STRINGS = {
     // Search & Filter
     search_placeholder: 'Search tasks... (e.g. repair)', search_neighborhood: 'Search neighborhood...',
     select_neighborhood: 'Select neighborhood', apply: 'Apply', cancel: 'Cancel',
+    cat_all: 'All', tasks_nearby: 'nearby', tasks_word: 'tasks',
     // Error messages
     fill_all_auth: 'Please fill in all fields', min_password: 'Password must be at least 6 characters',
     timeout: 'Connection timeout. Please try again.',
@@ -3126,6 +3128,12 @@ function t(key) {
   return (STRINGS[currentLang] && STRINGS[currentLang][key]) || STRINGS['bg'][key] || key;
 }
 
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}
+
 function getCAT(slug) {
   return (CAT_LABELS[currentLang] && CAT_LABELS[currentLang][slug]) || (CAT_LABELS['bg'] && CAT_LABELS['bg'][slug]) || slug;
 }
@@ -3141,6 +3149,11 @@ function applyTranslations() {
     }
   });
   document.documentElement.lang = currentLang;
+  document.querySelectorAll('.cat-chip').forEach(chip => {
+    const slug = chip.dataset.cat;
+    if (!slug) return;
+    chip.textContent = slug === 'all' ? t('cat_all') : getCAT(slug);
+  });
 }
 
 function switchLang() {
@@ -3208,6 +3221,13 @@ const SOFIA_DISTRICTS = {
 
 let selectedNeighborhoods = [];
 let tempSelectedNeighborhoods = [];
+let homeTasksCache = null;
+let homeTasksLoad = null;
+
+function invalidateHomeTasks() {
+  homeTasksCache = null;
+  homeTasksLoad = null;
+}
 
 const mockAds = [
   { icon:"🔧", bg:"#fef3c7", title:"MasterFix Tools", desc:"Quality tools for every home job. 20% off this week!" },
@@ -3413,7 +3433,7 @@ function renderPayBadge(method) {
 
 function timeLeft(endDate) {
   const diff = new Date(endDate) - new Date();
-  if(diff <= 0) return 'Ended';
+  if(diff <= 0) return t('ended');
   const h = Math.floor(diff / 3600000);
   const m = Math.floor((diff % 3600000) / 60000);
   if(h > 24) return Math.floor(h/24) + 'd ' + (h%24) + 'h';
@@ -3433,22 +3453,38 @@ function formatDate(d) {
 }
 
 // ===== RENDER TASK CARDS =====
+async function ensureHomeTasks() {
+  if (homeTasksCache) return homeTasksCache;
+  if (!homeTasksLoad) {
+    const nowIso = new Date().toISOString();
+    homeTasksLoad = sb.from('tasks')
+      .select('*, poster:profiles!poster_id(id, full_name, avatar_url, rating_avg, rating_count, trust_level)')
+      .eq('status', 'open')
+      .gt('bidding_ends_at', nowIso)
+      .order('created_at', { ascending: false })
+      .limit(60)
+      .then(({ data, error }) => {
+        if (error) {
+          homeTasksLoad = null;
+          throw error;
+        }
+        homeTasksCache = data || [];
+        return homeTasksCache;
+      });
+  }
+  return homeTasksLoad;
+}
+
 async function renderTaskCards() {
   const grid = document.getElementById('tasks-grid');
-  grid.innerHTML = `<div class="loading-spinner">${t('loading_tasks')}</div>`;
-
-  let query = sb.from('tasks').select('*, poster:profiles!poster_id(id, full_name, avatar_url, rating_avg, rating_count, trust_level)').eq('status', 'open').order('created_at', { ascending: false }).limit(30);
-
-  // Apply category filter
-  const activeCat = document.querySelector('.cat-chip.active');
-  if(activeCat && activeCat.textContent !== 'All') {
-    const catVal = CAT_REVERSE[activeCat.textContent];
-    if(catVal) query = query.eq('category', catVal);
+  if (!homeTasksCache) {
+    grid.innerHTML = `<div class="loading-spinner">${t('loading_tasks')}</div>`;
   }
 
-  const { data: tasks, error } = await query;
-
-  if(error || !tasks) {
+  let tasks;
+  try {
+    tasks = await ensureHomeTasks();
+  } catch (e) {
     grid.innerHTML = `<div class="empty-state"><div class="icon">😕</div><p>${t('could_not_load')}</p></div>`;
     return;
   }
@@ -3459,8 +3495,14 @@ async function renderTaskCards() {
     return;
   }
 
+  const activeCat = document.querySelector('.cat-chip.active');
+  const catSlug = activeCat?.dataset.cat || 'all';
+
   // Apply all filters
   let filtered = tasks;
+  if (catSlug !== 'all') {
+    filtered = filtered.filter(task => task.category === catSlug);
+  }
 
   // Keyword search
   const keyword = (document.getElementById('search-keyword')?.value || '').toLowerCase().trim();
@@ -3492,15 +3534,22 @@ async function renderTaskCards() {
     });
   }
 
+  const sort = document.getElementById('sort-tasks')?.value || 'newest';
+  if (sort === 'price_low') filtered.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+  else if (sort === 'price_high') filtered.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+  else if (sort === 'ending') filtered.sort((a, b) => new Date(a.bidding_ends_at) - new Date(b.bidding_ends_at));
+  else filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
   // Update task count text
   let countParts = [];
   if (selectedNeighborhoods.length > 0) {
     const names = selectedNeighborhoods.length <= 2 ? selectedNeighborhoods.join(', ') : selectedNeighborhoods.slice(0, 2).join(', ') + ' +' + (selectedNeighborhoods.length - 2);
-    countParts.push('в ' + names);
+    countParts.push(names);
   }
   if (keyword) countParts.push('"' + keyword + '"');
-  if (timeFilter) countParts.push('до ' + timeFilter + 'ч');
-  document.getElementById('task-count').textContent = filtered.length + ' задачи' + (countParts.length ? ' · ' + countParts.join(' · ') : ' наблизо');
+  if (timeFilter) countParts.push(timeFilter + 'h');
+  const countSuffix = countParts.length ? ' · ' + countParts.join(' · ') : ' ' + t('tasks_nearby');
+  document.getElementById('task-count').textContent = filtered.length + ' ' + t('tasks_word') + countSuffix;
 
   if (filtered.length === 0 && tasks.length > 0) {
     grid.innerHTML = `<div class="empty-state"><div class="icon">🔍</div><p>${t('no_tasks_found')}</p></div>`;
@@ -3509,45 +3558,46 @@ async function renderTaskCards() {
 
   let html = '';
 
-  filtered.forEach((t, idx) => {
+  filtered.forEach((task, idx) => {
     if(idx > 0 && idx % 3 === 0) {
       const ad = mockAds[(idx/3 - 1) % mockAds.length];
-      html += `<div class="ad-banner"><span class="ad-tag">Sponsored</span><div class="ad-icon" style="background:${ad.bg}">${ad.icon}</div><div class="ad-content"><h4>${ad.title}</h4><p>${ad.desc}</p></div></div>`;
+      html += `<div class="ad-banner"><span class="ad-tag">Sponsored</span><div class="ad-icon" style="background:${ad.bg}">${ad.icon}</div><div class="ad-content"><h4>${esc(ad.title)}</h4><p>${esc(ad.desc)}</p></div></div>`;
     }
 
-    const poster = t.poster || {};
+    const poster = task.poster || {};
     const trust = getTrust(poster.trust_level);
     const initials = getInitials(poster.full_name);
     const color = getColor(poster.id);
-    const tl = timeLeft(t.bidding_ends_at);
-    const catDisplay = getCAT(t.category);
+    const tl = timeLeft(task.bidding_ends_at);
+    const catDisplay = getCAT(task.category);
+    const place = task.location ? esc(task.location.split(',')[0]) : '';
 
     html += `
-      <div class="task-card" onclick="openTask('${t.id}')">
+      <div class="task-card" onclick="openTask('${task.id}')">
         <div class="task-card-top">
-          <span class="task-cat-tag">${catDisplay}</span>
+          <span class="task-cat-tag">${esc(catDisplay)}</span>
           <div class="task-price-wrap">
-            <div class="task-price">€${parseFloat(t.price).toFixed(0)}</div>
-            <div class="task-payment-type">${t.payment_method === 'escrow' ? '🔒 Escrow' : '💵 Cash'}</div>
+            <div class="task-price">€${parseFloat(task.price).toFixed(0)}</div>
+            <div class="task-payment-type">${task.payment_method === 'escrow' ? '🔒 Escrow' : '💵 Cash'}</div>
           </div>
         </div>
-        <h3>${t.title}</h3>
-        <p class="desc">${t.description}</p>
+        <h3>${esc(task.title)}</h3>
+        <p class="desc">${esc(task.description)}</p>
         <div class="task-card-footer">
           <div class="task-poster">
             <div class="avatar" style="background:${color}">
               ${trust === TRUST_MAP['premium'] ? '<span class="premium-ring"></span>' : ''}
-              ${initials}
+              ${esc(initials)}
             </div>
             <div class="poster-info">
-              <div class="name">${poster.full_name || 'User'} ${renderTrustBadge(trust)}</div>
+              <div class="name">${esc(poster.full_name || 'User')} ${renderTrustBadge(trust)}</div>
               <div class="rating">${renderStars(poster.rating_avg)}</div>
             </div>
           </div>
           <div class="task-meta">
-            ${t.location ? '<span class="task-location-tag">📍 ' + t.location.split(',')[0] + '</span>' : ''}
-            <span class="meta-item"><span class="countdown ${tl !== t('ended') && parseInt(tl) > 2 ? 'ok' : ''}"><span class="dot"></span> ${tl}</span></span>
-            <span class="meta-item">${t.bid_count || 0} ${t('bids')}</span>
+            ${place ? '<span class="task-location-tag">📍 ' + place + '</span>' : ''}
+            <span class="meta-item"><span class="countdown ${tl !== t('ended') && parseInt(tl) > 2 ? 'ok' : ''}"><span class="dot"></span> ${esc(tl)}</span></span>
+            <span class="meta-item">${task.bid_count || 0} ${t('bids')}</span>
           </div>
         </div>
       </div>`;
@@ -3570,8 +3620,8 @@ async function openTask(id) {
   const isOwner = currentUser && task.poster_id === currentUser.id;
 
   document.getElementById('detail-content').innerHTML = `
-    <span class="detail-cat-badge">${catDisplay}</span>
-    <h1>${task.title}</h1>
+    <span class="detail-cat-badge">${esc(catDisplay)}</span>
+    <h1>${esc(task.title)}</h1>
     <div class="detail-price-row">
       <span class="detail-price">€${parseFloat(task.price).toFixed(0)}</span>
       <span class="bidding-badge ${task.bidding_type==='price'?'price-bid':'fixed-price'}">${task.bidding_type==='price'?t('price_bidding'):t('fixed_price')}</span>
@@ -3583,11 +3633,11 @@ async function openTask(id) {
     : `<div class="payment-info-box"><div class="pay-icon cash-icon">💵</div><div class="pay-details"><h5>${t('cash_payment')}</h5><p>${t('cash_desc')}</p></div></div>`;
 
   document.getElementById('detail-body').innerHTML = `
-    <p class="detail-desc">${task.description}</p>
+    <p class="detail-desc">${esc(task.description)}</p>
     ${payInfo}
     <div class="detail-info-grid">
       <div class="info-card"><div class="label">${t('time_left')}</div><div class="value"><span class="countdown ${tl !== t('ended') && parseInt(tl) > 2 ? 'ok' : ''}"><span class="dot"></span> ${tl}</span></div></div>
-      <div class="info-card"><div class="label">${t('location_label')}</div><div class="value">${task.location || 'Not specified'}</div></div>
+      <div class="info-card"><div class="label">${t('location_label')}</div><div class="value">${esc(task.location || 'Not specified')}</div></div>
       <div class="info-card"><div class="label">${t('total_bids')}</div><div class="value">${task.bid_count || 0} ${t('bids')}</div></div>
       <div class="info-card"><div class="label">${t('bidding_type_label')}</div><div class="value">${task.bidding_type==='price'?t('open_bidding'):t('fixed_price')}</div></div>
     </div>
@@ -3597,7 +3647,7 @@ async function openTask(id) {
         ${initials}
       </div>
       <div class="info">
-        <h4>${poster.full_name || 'User'} ${renderTrustBadge(trust)}</h4>
+        <h4>${esc(poster.full_name || 'User')} ${renderTrustBadge(trust)}</h4>
         <div class="rating">${renderStars(poster.rating_avg)}</div>
         <div class="tasks-done">${poster.tasks_completed || 0} ${t('tasks_completed')} ${renderTrustDots(trust)}</div>
       </div>
@@ -3615,10 +3665,10 @@ async function openTask(id) {
       return `<div class="bid-card">
         <div class="avatar" style="background:${bc};width:36px;height:36px;font-size:13px">${bt === TRUST_MAP['premium'] ? '<span class="premium-ring"></span>' : ''}${bi}</div>
         <div class="bid-info">
-          <div class="bid-header"><span class="name">${b.bidder?.full_name || 'User'} ${renderTrustBadge(bt)}</span><span class="bid-price">€${parseFloat(b.amount || task.price).toFixed(0)}</span></div>
+          <div class="bid-header"><span class="name">${esc(b.bidder?.full_name || 'User')} ${renderTrustBadge(bt)}</span><span class="bid-price">€${parseFloat(b.amount || task.price).toFixed(0)}</span></div>
           <div class="rating">${renderStars(b.bidder?.rating_avg)} ${renderTrustDots(bt)}</div>
-          <div class="bid-msg">${b.message || ''}</div>
-          ${isOwner && b.status === 'pending' ? `<button class="select-bid-btn" onclick="selectBid('${b.id}', event)">${t('select_bidder')} ${(b.bidder?.full_name || 'User').split(' ')[0]}</button>` : ''}
+          <div class="bid-msg">${esc(b.message || '')}</div>
+          ${isOwner && b.status === 'pending' ? `<button class="select-bid-btn" onclick="selectBid('${b.id}', event)">${t('select_bidder')} ${esc((b.bidder?.full_name || 'User').split(' ')[0])}</button>` : ''}
         </div>
       </div>`;
     }).join('');
@@ -3657,6 +3707,7 @@ async function submitBid() {
   const message = document.getElementById('bid-message-input').value.trim();
 
   if(currentTask.bidding_type === 'price' && (!amount || amount <= 0)) return showToast(t('please_enter_price'));
+  if(currentTask.bidding_ends_at && new Date(currentTask.bidding_ends_at) <= new Date()) return showToast(t('ended'));
 
   const { error } = await sb.from('bids').insert({
     task_id: currentTask.id,
@@ -3672,6 +3723,7 @@ async function submitBid() {
 
   closeBidModal();
   showToast(t('bid_submitted'));
+  invalidateHomeTasks();
   openTask(currentTask.id);
 }
 
@@ -3679,16 +3731,19 @@ async function selectBid(bidId, e) {
   e.stopPropagation();
   if(!currentTask || !currentUser) return;
 
-  const { data: bid } = await sb.from('bids').select('*').eq('id', bidId).single();
-  if(!bid) return showToast(t('bid_not_found'));
+  const { data: bid, error: bidErr } = await sb.from('bids').select('*').eq('id', bidId).single();
+  if(bidErr || !bid || bid.task_id !== currentTask.id) return showToast(t('bid_not_found'));
 
-  // Update task
-  await sb.from('tasks').update({ status: 'in_progress', selected_bid_id: bidId, selected_doer_id: bid.bidder_id }).eq('id', currentTask.id);
-  // Update bid statuses
-  await sb.from('bids').update({ status: 'selected' }).eq('id', bidId);
-  await sb.from('bids').update({ status: 'rejected' }).eq('task_id', currentTask.id).neq('id', bidId);
-  // Create conversation
-  await sb.from('conversations').upsert({
+  const { error: taskErr } = await sb.from('tasks').update({
+    status: 'in_progress',
+    selected_bid_id: bidId,
+    selected_doer_id: bid.bidder_id
+  }).eq('id', currentTask.id).eq('poster_id', currentUser.id);
+  if(taskErr) return showToast(taskErr.message);
+
+  const { error: selErr } = await sb.from('bids').update({ status: 'selected' }).eq('id', bidId);
+  const { error: rejErr } = await sb.from('bids').update({ status: 'rejected' }).eq('task_id', currentTask.id).neq('id', bidId);
+  const { error: convErr } = await sb.from('conversations').upsert({
     task_id: currentTask.id,
     poster_id: currentTask.poster_id,
     doer_id: bid.bidder_id,
@@ -3696,7 +3751,14 @@ async function selectBid(bidId, e) {
     agreed_price: bid.amount || currentTask.price
   }, { onConflict: 'task_id,poster_id,doer_id' });
 
-  showToast(t('bidder_selected'));
+  if(selErr || rejErr || convErr) {
+    showToast(currentLang === 'en'
+      ? 'Bidder saved on the task. Bid status or chat still needs a database policy update.'
+      : 'Наддавачът е записан. Статусът на офертите или чатът чакат корекция на правата в базата.');
+  } else {
+    showToast(t('bidder_selected'));
+  }
+  invalidateHomeTasks();
   openTask(currentTask.id);
 }
 
@@ -3714,14 +3776,14 @@ async function renderMyTasks() {
       const tl = timeLeft(task.bidding_ends_at);
       const catDisplay = getCAT(task.category);
       return `<div class="my-task-card" onclick="openTask('${task.id}')">
-        <div class="my-task-top"><h4>${task.title}</h4><span class="status-badge ${st}">${st.replace('-',' ')}</span></div>
+        <div class="my-task-top"><h4>${esc(task.title)}</h4><span class="status-badge ${st}">${st.replace('-',' ')}</span></div>
         <div class="my-task-meta">
           <span>€${parseFloat(task.price).toFixed(0)}</span>
           <span>${task.payment_method === 'escrow' ? '🔒 Escrow' : '💵 Cash'}</span>
           <span>${catDisplay}</span>
           ${task.status==='open' ? `<span>${task.bid_count || 0} ${t('bids')} · ${tl} left</span>` : ''}
-          ${task.status==='in_progress' ? `<span>Doer: ${task.selected_doer?.full_name || 'Selected'}</span>` : ''}
-          ${task.status==='completed' ? `<span>Done by: ${task.selected_doer?.full_name || 'User'}</span>` : ''}
+          ${task.status==='in_progress' ? `<span>Doer: ${esc(task.selected_doer?.full_name || 'Selected')}</span>` : ''}
+          ${task.status==='completed' ? `<span>Done by: ${esc(task.selected_doer?.full_name || 'User')}</span>` : ''}
         </div>
         ${task.status==='in_progress' ? `<button class="mark-complete-btn" onclick="event.stopPropagation();completeTask('${task.id}')">✓ Mark as Complete</button>` : ''}
         ${task.status==='completed' ? '<div style="margin-top:8px;font-size:12px;color:var(--warning)">★★★★★ Rated</div>' : ''}
@@ -3740,10 +3802,10 @@ async function renderMyTasks() {
       const st = b.status === 'pending' ? 'pending' : b.status === 'selected' ? 'selected' : 'not-selected';
       const catDisplay = getCAT(b.task?.category);
       return `<div class="my-task-card" onclick="openTask('${b.task?.id}')">
-        <div class="my-task-top"><h4>${b.task?.title || 'Task'}</h4><span class="status-badge ${st}">${st.replace('-',' ')}</span></div>
+        <div class="my-task-top"><h4>${esc(b.task?.title || 'Task')}</h4><span class="status-badge ${st}">${st.replace('-',' ')}</span></div>
         <div class="my-task-meta">
           <span>Your bid: €${parseFloat(b.amount || 0).toFixed(0)}</span>
-          <span>By: ${b.task?.poster?.full_name || 'User'}</span>
+          <span>By: ${esc(b.task?.poster?.full_name || 'User')}</span>
           <span>${catDisplay}</span>
         </div>
       </div>`;
@@ -3761,9 +3823,15 @@ function switchMyTab(btn, tab) {
 }
 
 async function completeTask(id) {
-  const { error } = await sb.from('tasks').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', id);
-  if(error) return showToast('Error: ' + error.message);
+  const { error } = await sb.rpc('complete_task', { p_task_id: id });
+  const missingFn = error && /could not find the function|schema cache|PGRST202/i.test(error.message || '');
+  if(error && !missingFn) return showToast(error.message);
+  if(missingFn) {
+    const { error: fallbackErr } = await sb.from('tasks').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', id);
+    if(fallbackErr) return showToast(fallbackErr.message);
+  }
   showToast(t('task_complete'));
+  invalidateHomeTasks();
   renderMyTasks();
 }
 
@@ -3787,9 +3855,9 @@ async function renderChats() {
     const color = getColor(other?.id);
 
     if(!c.is_unlocked) {
-      html += `<div class="chat-item" style="opacity:0.5" onclick="openLockedChat('${other?.full_name || 'User'}', '${color}', '${initials}')">
-        <div class="avatar" style="background:${color};width:44px;height:44px;font-size:15px">${initials}</div>
-        <div class="chat-info"><div class="chat-name">${other?.full_name || 'User'}</div><div class="chat-task">${c.task?.title || 'Task'}</div><div class="chat-preview">🔒 Waiting for bid selection...</div></div>
+      html += `<div class="chat-item" style="opacity:0.5" data-name="${esc(other?.full_name || 'User')}" data-color="${esc(color)}" data-initials="${esc(initials)}" onclick="openLockedChat(this.dataset.name, this.dataset.color, this.dataset.initials)">
+        <div class="avatar" style="background:${color};width:44px;height:44px;font-size:15px">${esc(initials)}</div>
+        <div class="chat-info"><div class="chat-name">${esc(other?.full_name || 'User')}</div><div class="chat-task">${esc(c.task?.title || 'Task')}</div><div class="chat-preview">🔒 Waiting for bid selection...</div></div>
       </div>`;
       continue;
     }
@@ -3800,8 +3868,8 @@ async function renderChats() {
     const unreadRes = await sb.from('messages').select('id', { count: 'exact', head: true }).eq('conversation_id', c.id).neq('sender_id', currentUser.id).eq('is_read', false);
 
     html += `<div class="chat-item" onclick="openChat('${c.id}')">
-      <div class="avatar" style="background:${color};width:44px;height:44px;font-size:15px">${initials}</div>
-      <div class="chat-info"><div class="chat-name">${other?.full_name || 'User'}</div><div class="chat-task">${c.task?.title || 'Task'} · €${parseFloat(c.agreed_price || c.task?.price || 0).toFixed(0)}</div><div class="chat-preview">${lastMsg?.content || 'Start chatting...'}</div></div>
+      <div class="avatar" style="background:${color};width:44px;height:44px;font-size:15px">${esc(initials)}</div>
+      <div class="chat-info"><div class="chat-name">${esc(other?.full_name || 'User')}</div><div class="chat-task">${esc(c.task?.title || 'Task')} · €${parseFloat(c.agreed_price || c.task?.price || 0).toFixed(0)}</div><div class="chat-preview">${esc(lastMsg?.content || 'Start chatting...')}</div></div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
         <span class="chat-time">${lastMsg ? formatDate(lastMsg.created_at) : ''}</span>
         ${(unreadRes?.count || 0) > 0 ? '<span class="unread-dot"></span>' : ''}
@@ -3845,11 +3913,11 @@ async function openChat(convId) {
     <div class="chat-conv-header">
       <button class="back-btn" onclick="closeChat()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back</button>
       <div class="avatar" style="background:${color};width:32px;height:32px;font-size:12px">${initials}</div>
-      <span style="font-weight:600;font-size:14px">${other?.full_name || 'User'}</span>
+      <span style="font-weight:600;font-size:14px">${esc(other?.full_name || 'User')}</span>
     </div>
-    <div class="chat-task-ref"><span class="task-title">${conv.task?.title || 'Task'}</span><span class="task-price-sm">€${parseFloat(conv.agreed_price || conv.task?.price || 0).toFixed(0)}</span></div>
+    <div class="chat-task-ref"><span class="task-title">${esc(conv.task?.title || 'Task')}</span><span class="task-price-sm">€${parseFloat(conv.agreed_price || conv.task?.price || 0).toFixed(0)}</span></div>
     <div class="chat-messages">
-      ${(messages || []).map(m => `<div><div class="msg-bubble ${m.sender_id === currentUser.id ? 'sent' : 'received'}">${m.content}</div><div class="msg-time ${m.sender_id === currentUser.id ? '' : 'left'}">${formatDate(m.created_at)}</div></div>`).join('')}
+      ${(messages || []).map(m => `<div><div class="msg-bubble ${m.sender_id === currentUser.id ? 'sent' : 'received'}">${esc(m.content)}</div><div class="msg-time ${m.sender_id === currentUser.id ? '' : 'left'}">${formatDate(m.created_at)}</div></div>`).join('')}
     </div>
     <div class="chat-input-bar">
       <input type="text" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMessage(this)">
@@ -3871,7 +3939,7 @@ async function sendMessage(input) {
   const msgs = document.querySelector('.chat-messages');
   const now = new Date();
   const time = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
-  msgs.innerHTML += `<div><div class="msg-bubble sent">${text}</div><div class="msg-time">${time}</div></div>`;
+  msgs.innerHTML += `<div><div class="msg-bubble sent">${esc(text)}</div><div class="msg-time">${time}</div></div>`;
   input.value = '';
   msgs.scrollTop = msgs.scrollHeight;
 }
@@ -3924,7 +3992,7 @@ async function renderWallet() {
           if(t.type === 'held') amountClass = 'pending-tx';
           const statusLabels = { held:'Held', released:'Released', received:'Received' };
           const statusClasses = { held:'held-s', released:'released-s', received:'received-s' };
-          return `<div class="tx-item"><div class="tx-icon ${t.type}">${icons[t.type] || '📄'}</div><div class="tx-details"><div class="tx-title">${t.description || t.type}</div><div class="tx-date">${formatDate(t.created_at)}</div></div><div style="text-align:right"><div class="tx-amount ${amountClass}">${amtStr}</div>${statusLabels[t.type] ? `<div class="tx-status ${statusClasses[t.type] || ''}">${statusLabels[t.type]}</div>` : ''}</div></div>`;
+          return `<div class="tx-item"><div class="tx-icon ${t.type}">${icons[t.type] || '📄'}</div><div class="tx-details"><div class="tx-title">${esc(t.description || t.type)}</div><div class="tx-date">${formatDate(t.created_at)}</div></div><div style="text-align:right"><div class="tx-amount ${amountClass}">${amtStr}</div>${statusLabels[t.type] ? `<div class="tx-status ${statusClasses[t.type] || ''}">${statusLabels[t.type]}</div>` : ''}</div></div>`;
         }).join('') || '<div class="empty-state"><p>No transactions yet</p></div>'}
       </div></div>`;
   }
@@ -3998,22 +4066,23 @@ function selectPayMethod(el, method) {
 
 function previewTask() {
   if (!requireAuth(() => showView('create'))) return;
-  const title = document.getElementById('create-title').value || 'Fix broken lamp';
-  const desc = document.getElementById('create-desc').value || 'The lamp in my living room stopped working. Need someone to check and fix it.';
-  const price = document.getElementById('create-price').value || '5';
-  const cat = document.getElementById('create-cat').value || 'Home Repair';
+  const title = document.getElementById('create-title').value.trim();
+  const desc = document.getElementById('create-desc').value.trim();
+  const price = document.getElementById('create-price').value;
+  const cat = document.getElementById('create-cat').value;
+  if(!title || !desc || !price || !cat) return showToast(t('fill_all_fields'));
   const neighborhood = document.getElementById('create-neighborhood').value;
   const address = document.getElementById('create-address').value.trim();
   const loc = neighborhood ? (neighborhood + (address ? ', ' + address : '')) : address;
   const preview = document.getElementById('preview-card');
   document.getElementById('preview-content').innerHTML = `
     <div class="task-card" style="cursor:default;">
-      <div class="task-card-top"><span class="task-cat-tag">${cat}</span>
+      <div class="task-card-top"><span class="task-cat-tag">${esc(cat)}</span>
         <div class="task-price-wrap"><div class="task-price">€${parseFloat(price).toFixed(0)}</div><div class="task-payment-type">💵 Cash</div></div>
       </div>
-      <h3 style="margin-bottom:6px;">${title}</h3>
-      <p class="desc">${desc}</p>
-      ${loc ? '<div style="margin-top:8px"><span class="task-location-tag">📍 ' + loc + '</span></div>' : ''}
+      <h3 style="margin-bottom:6px;">${esc(title)}</h3>
+      <p class="desc">${esc(desc)}</p>
+      ${loc ? '<div style="margin-top:8px"><span class="task-location-tag">📍 ' + esc(loc) + '</span></div>' : ''}
     </div>`;
   preview.classList.add('show');
 }
@@ -4030,7 +4099,7 @@ async function postTask() {
   const neighborhood = document.getElementById('create-neighborhood').value;
   const address = document.getElementById('create-address').value.trim();
   const location = neighborhood ? (neighborhood + (address ? ', ' + address : '')) : address;
-  const bidType = document.querySelector('.toggle-opt.active')?.textContent.includes('propose') ? 'price' : 'fixed';
+  const bidType = document.querySelector('.toggle-opt.active')?.getAttribute('onclick')?.includes("'price'") ? 'price' : 'fixed';
 
   if(!title || !desc || !price || !category) return showToast(t('fill_all_fields'));
 
@@ -4051,6 +4120,7 @@ async function postTask() {
 
   if(error) return showToast('Error: ' + error.message);
 
+  invalidateHomeTasks();
   document.getElementById('preview-card').classList.remove('show');
   document.getElementById('create-title').value = '';
   document.getElementById('create-desc').value = '';
@@ -4083,9 +4153,10 @@ function buildNeighborhoodList(filter = '') {
 
     quarters.forEach(q => {
       const checked = tempSelectedNeighborhoods.includes(q) ? 'checked' : '';
+      const quarterId = 'q-' + district.replace(/\s+/g, '-') + '-' + q.replace(/\s+/g, '-');
       html += `<div class="quarter-item">
-        <input type="checkbox" id="q-${q.replace(/\s+/g, '-')}" value="${q}" ${checked} onchange="toggleQuarter(this)">
-        <label for="q-${q.replace(/\s+/g, '-')}">${q}</label>
+        <input type="checkbox" id="${quarterId}" value="${esc(q)}" ${checked} onchange="toggleQuarter(this)">
+        <label for="${quarterId}">${esc(q)}</label>
       </div>`;
     });
 
@@ -4404,20 +4475,20 @@ async function createDummyPosts() {
 
   const dummyTasks = [
     { title: 'Перфектна чистка на дом', desc: 'Нужна професионална чистка на апартамент 3 стаи', category: 'cleaning', price: 120, neighborhood: 'Център', address: 'бул. Васил Левски' },
-    { title: 'Инсталация на кухненски шкафове', desc: 'Монтаж на нови шкафове, нужен опитен майстор', category: 'handyman', price: 250, neighborhood: 'Люлин', address: 'ж.к. Люлин 5' },
+    { title: 'Инсталация на кухненски шкафове', desc: 'Монтаж на нови шкафове, нужен опитен майстор', category: 'home-repair', price: 250, neighborhood: 'Люлин 5', address: 'ж.к. Люлин 5' },
     { title: 'Транспорт на мебели', desc: 'Преместване на диван и маса, нужен камион', category: 'moving', price: 80, neighborhood: 'Изток', address: 'ж.к. Изток' },
-    { title: 'Дизайн на логото', desc: 'Създаване на професионално лого за малък бизнес', category: 'design', price: 200, neighborhood: 'Младост', address: '' },
-    { title: 'Помощ с уебсайт', desc: 'Поправка на контактна форма и быстрот на сайта', category: 'tech', price: 150, neighborhood: 'Трендафилова градина', address: '' },
+    { title: 'Дизайн на логото', desc: 'Създаване на професионално лого за малък бизнес', category: 'other', price: 200, neighborhood: 'Младост 1', address: '' },
+    { title: 'Помощ с уебсайт', desc: 'Поправка на контактна форма и бързината на сайта', category: 'tech-help', price: 150, neighborhood: 'Лозенец', address: '' },
     { title: 'Частни уроци по математика', desc: 'Подготовка на ученик за матура, 3-4 часа седмично', category: 'tutoring', price: 25, neighborhood: 'Борово', address: '' },
-    { title: 'Дърводелски услуги', desc: 'Направа на полица и опаковане на мебели', category: 'handyman', price: 180, neighborhood: 'Слатина', address: '' },
-    { title: 'Фотография на събитие', desc: 'Снимане на сватба, 6 часа работа', category: 'photography', price: 400, neighborhood: 'Младост 2', address: '' },
-    { title: 'SEO оптимизация', desc: 'Подобряване на видимост на малкия е-магазин', category: 'tech', price: 300, neighborhood: 'Иван Вазов', address: '' },
-    { title: 'Писане на статии', desc: 'Съдържание за блог, 2000+ думи, всеки постер', category: 'writing', price: 60, neighborhood: 'Абагар', address: '' },
-    { title: 'Уход на тревата', desc: 'Кошене, тримериране и озеленяване на градина', category: 'gardening', price: 100, neighborhood: 'Симеоново', address: '' },
-    { title: 'Поправка на велосипед', desc: 'Смяна на вериги и поправка на спирачки', category: 'repair', price: 50, neighborhood: 'Момина паст', address: '' },
+    { title: 'Дърводелски услуги', desc: 'Направа на полица и опаковане на мебели', category: 'home-repair', price: 180, neighborhood: 'Слатина', address: '' },
+    { title: 'Фотография на събитие', desc: 'Снимане на сватба, 6 часа работа', category: 'other', price: 400, neighborhood: 'Младост 2', address: '' },
+    { title: 'SEO оптимизация', desc: 'Подобряване на видимост на малкия е-магазин', category: 'tech-help', price: 300, neighborhood: 'Иван Вазов', address: '' },
+    { title: 'Писане на статии', desc: 'Съдържание за блог, 2000+ думи на текст', category: 'other', price: 60, neighborhood: 'Оборище', address: '' },
+    { title: 'Уход на тревата', desc: 'Косене, тримиране и озеленяване на градина', category: 'gardening', price: 100, neighborhood: 'Симеоново', address: '' },
+    { title: 'Поправка на велосипед', desc: 'Смяна на верига и поправка на спирачки', category: 'home-repair', price: 50, neighborhood: 'Бояна', address: '' },
     { title: 'Вокални уроци онлайн', desc: 'Обучение в пеене, всеки ден освен неделя', category: 'tutoring', price: 30, neighborhood: 'Банишора', address: '' },
-    { title: 'Пакетиране и изпращане', desc: 'Подготовка и пощилане на парцели за ебей продажба', category: 'packing', price: 35, neighborhood: 'Новинки', address: '' },
-    { title: 'Детайлинг на кола', desc: 'Пълно почистване и восъкване на автомобил', category: 'automotive', price: 280, neighborhood: 'Красна поляна', address: '' }
+    { title: 'Пакетиране и изпращане', desc: 'Подготовка и изпращане на пратки за онлайн продажба', category: 'errands', price: 35, neighborhood: 'Надежда 1', address: '' },
+    { title: 'Детайлинг на кола', desc: 'Пълно почистване и восък на автомобил', category: 'other', price: 280, neighborhood: 'Красна поляна 1', address: '' }
   ];
 
   let created = 0;
@@ -4443,7 +4514,8 @@ async function createDummyPosts() {
     if (!error) created++;
   }
 
-  showToast(`Created ${created} dummy posts!`);
+  invalidateHomeTasks();
+  showToast(created + ' / ' + dummyTasks.length);
   setTimeout(() => { renderTaskCards(); }, 800);
 }
 

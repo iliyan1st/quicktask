@@ -1,115 +1,69 @@
 # QuickTask - Setup Guide
 
 ## Architecture
-- **Frontend**: Single HTML file (public/index.html)
-- **Backend**: Vercel Serverless Functions (api/)
-- **Database**: Supabase (PostgreSQL + Auth + Realtime)
-- **Cost**: €0/month on free tiers
+- **Frontend**: one static page, `public/index.html` (HTML/CSS/JS inline, Supabase JS from a pinned CDN build). Bulgarian by default, English toggle.
+- **Backend**: Supabase only. The browser talks to Postgres through Supabase with the anon key, so **Row Level Security, column grants, triggers and RPC functions are the backend**. There is no server code.
+- **Scheduled work**: `pg_cron` inside the database runs `expire_tasks()` every 5 minutes.
+- **Hosting**: Vercel serves `public/` (Git integration, deploys on push to `master`).
+- **Cost**: €0/month on free tiers.
 
 ---
 
-## Step 1: Create Supabase Project (Free)
+## Step 1: Supabase
 
-1. Go to https://supabase.com and sign up
-2. Click "New Project"
-3. Choose a name (e.g., "quicktask"), set a database password, select EU region
-4. Wait for the project to be created (~2 min)
+1. Create a project (EU region) at https://supabase.com.
+2. **SQL Editor**: run these in order:
+   1. `supabase/schema.sql`: tables, base policies, triggers
+   2. `supabase/functions.sql`: legacy helper functions
+   3. `supabase/migrations/20261027_secure_rpcs_and_features.sql`: locks down direct writes, adds the workflow RPCs, demo wallet, notifications, ratings, photo bucket, realtime and the cron job. Safe to re-run.
 
-### Get your credentials:
-- Go to **Settings → API**
-- Copy: `Project URL`, `anon/public key`, `service_role key`
+   (`supabase/fix_runtime.sql` is superseded by the migration; you don't need to run it.)
+3. **Authentication → URL Configuration**: Site URL = your deployed URL; add `http://localhost:8080/**` to redirect URLs for local dev.
+4. Email confirmation is currently **off** (users are signed in right after sign-up).
+5. Google/Facebook sign-in: enable the providers in **Authentication → Providers**, then set `OAUTH_ENABLED = true` in `public/index.html` to show the buttons.
+6. Put the project URL and anon key in `public/index.html` (`SUPABASE_URL`, `SUPABASE_ANON_KEY`). The anon key is public by design.
 
-### Set up the database:
-- Go to **SQL Editor**
-- Copy the contents of `supabase/schema.sql` and run it
-- This creates all tables, indexes, security policies, and triggers
-
-### Enable Auth providers:
-- Go to **Authentication → Providers**
-- Email is enabled by default
-- Enable Google: Add your Google OAuth credentials
-- Enable Facebook: Add your Facebook App credentials
+### Free-tier note
+Free projects pause after about a week without API traffic, and an organization can have only 2 active free projects. A daily keep-alive request (cron-job.org job "QuickTask DB keep-alive") prevents the pause.
 
 ---
 
-## Step 2: Deploy to Vercel (Free)
+## Step 2: Deploy
 
-1. Install Vercel CLI: `npm install -g vercel`
-2. In the project folder, run: `vercel`
-3. Follow the prompts to link your project
-4. Add environment variables:
-   ```
-   vercel env add SUPABASE_URL
-   vercel env add SUPABASE_ANON_KEY
-   vercel env add SUPABASE_SERVICE_ROLE_KEY
-   vercel env add CRON_SECRET
-   ```
-5. Deploy: `vercel --prod`
+Push to `master`. Vercel serves `public/` as static files, with no build step.
 
-### Set up Cron (for task status transitions):
-- In Vercel dashboard → Settings → Cron Jobs
-- Add: `GET /api/cron/update-tasks` every 5 minutes
-- Or use https://cron-job.org (free) to call the endpoint
+## Local development
+
+```bash
+python -m http.server 8080 --directory public
+# open http://localhost:8080
+```
+
+Dev helper: while logged in, run `createDummyPosts()` in the browser console to add 15 sample tasks.
 
 ---
 
-## Step 3: Local Development
+## How the workflow is enforced (database)
 
-1. Copy `.env.example` to `.env` and fill in your Supabase credentials
-2. Run: `npx vercel dev` (or install vercel globally)
-3. Open: http://localhost:3000
+| Action | How the browser does it | Enforced by |
+|---|---|---|
+| Post task | `insert` into `tasks` | Column grants plus a `before_task_insert` trigger that sets status, counters and the deadline, and checks photo paths |
+| Bid | `insert` into `bids` | `before_bid_insert`: not your own task, bidding open, fixed price forced |
+| Select bid | `rpc('select_bid')` | Poster only; escrow holds the amount, rejects other bids, unlocks chat |
+| Complete | `rpc('complete_task')` | Poster only; releases escrow and bumps the doer's count |
+| Cancel / back out | `rpc('cancel_task')` | Poster before selection; doer while in progress (refunds escrow) |
+| Withdraw bid | `rpc('withdraw_bid')` | Own pending bid |
+| Rate | `rpc('rate_task')` | Participants of a completed task, once each |
+| Demo top-up | `rpc('demo_top_up')` | €5–500 per call, €5000 cap. Test credits, not real money |
+| Own profile incl. wallet | `rpc('get_my_profile')` | Other users only see public profile columns |
+| Chat | `insert` into `messages` | Participants of an unlocked conversation; only `is_read` is updatable |
 
----
+Errors come back as short keys (`insufficient_funds`, `own_task`, ...), which the frontend translates (`err_*` strings).
 
-## API Endpoints
+## Tests
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /api/auth/signup | Register new user |
-| POST | /api/auth/login | Login with email/password |
-| POST | /api/auth/oauth | Get OAuth URL (Google/Facebook) |
-| GET | /api/tasks | List tasks (filters: category, sort, search) |
-| POST | /api/tasks | Create a new task |
-| GET | /api/tasks/:id | Get task detail with bids |
-| PATCH | /api/tasks/:id | Update task (select bid, complete, cancel) |
-| GET | /api/bids?task_id=x | Get bids for a task |
-| POST | /api/bids | Place a bid |
-| GET | /api/messages | List conversations |
-| GET | /api/messages?conversation_id=x | Get messages |
-| POST | /api/messages | Send a message |
-| GET | /api/wallet | Get balance + transactions |
-| POST | /api/wallet | Add funds / set payment mode |
-| GET | /api/users/:id | Get user profile |
-| PATCH | /api/users/:id | Update own profile |
-| GET | /api/users/me | Get current user + dashboard data |
-| GET | /api/cron/update-tasks | Transition task statuses |
+```bash
+node --test                 # DB security/workflow tests (tests/db-security.test.mjs) against the live project (needs .env with the service role key)
+```
 
----
-
-## Database Schema
-
-- **profiles**: User profiles with trust levels, ratings, wallet
-- **tasks**: Posted tasks with bidding/selection windows
-- **bids**: User bids on tasks
-- **conversations**: Chat threads (locked until bid selected)
-- **messages**: Chat messages
-- **ratings**: Post-task ratings
-- **transactions**: Wallet transaction history
-- **notifications**: Push/in-app notifications
-
----
-
-## Free Tier Limits
-
-### Supabase Free:
-- 500MB database
-- 1GB file storage
-- 50,000 monthly active users
-- 2GB bandwidth
-
-### Vercel Free:
-- 100GB bandwidth
-- Serverless function executions: 100,000/month
-- 6,000 build minutes/month
-
-These limits are MORE than enough for launching and growing to your first 1,000+ users.
+`.env` (not committed) holds `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`. See `.env.example`.

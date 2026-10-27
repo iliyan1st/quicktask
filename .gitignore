@@ -1,0 +1,9 @@
+node_modules/
+.env
+.env.local
+.vercel
+
+# local scratch copies
+*.bak
+public/index_new.html
+qt_deployed.html

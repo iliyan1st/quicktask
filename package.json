@@ -1,0 +1,22 @@
+{
+  "name": "quicktask",
+  "version": "1.0.0",
+  "description": "QuickTask - Micro-task marketplace",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod",
+    "db:setup": "echo 'Run supabase/schema.sql in your Supabase SQL Editor'"
+  },
+  "keywords": [
+    "marketplace",
+    "tasks",
+    "bidding"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.97.0",
+    "pg": "^8.18.0"
+  }
+}

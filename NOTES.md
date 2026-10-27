@@ -23,7 +23,7 @@ Done:
 - [x] Removed `api/`, `lib/`, `vercel.json`, stale docs and scripts (6827542)
 - [x] Frontend: RPC wiring, ratings, notifications + realtime (self-healing), photo upload, demo wallet, i18n completion, XSS fixes
 - [x] E2E browser pass (`tests/e2e-flow.cjs`): 167 pass / 0 bugs after fixes; realtime recovery 14/14
-- [ ] Push and verify live
+- [x] Pushed and verified live 2026-10-27 (c2283f1): smoke test clean, cron succeeding
 
 ## Open items / decisions for later
 - Google/Facebook login: providers are disabled in Supabase; the buttons are hidden behind `OAUTH_ENABLED` in index.html.

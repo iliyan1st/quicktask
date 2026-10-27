@@ -7,3 +7,4 @@ node_modules/
 *.bak
 public/index_new.html
 qt_deployed.html
+tests/e2e-output/

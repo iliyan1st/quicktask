@@ -64,6 +64,10 @@ Errors come back as short keys (`insufficient_funds`, `own_task`, ...), which th
 
 ```bash
 node --test                 # DB security/workflow tests (tests/db-security.test.mjs) against the live project (needs .env with the service role key)
+npm start                   # serve public/ on :8080, then in another terminal:
+node tests/e2e-flow.cjs     # two-user browser flow (needs Playwright: npm i -g @playwright/test && npx playwright install chromium)
 ```
+
+Both suites create throwaway `qa-*` / `e2e-*` users and delete everything they made at the end.
 
 `.env` (not committed) holds `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`. See `.env.example`.
